@@ -255,6 +255,15 @@
       margin-top: 15px;
     }
     
+    .debug-info {
+      background: #f5f5f5;
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #666;
+    }
+    
     @media (max-width: 768px) {
       .placeholders {
         grid-template-columns: 1fr;
@@ -283,6 +292,7 @@
       <div class="controls">
         <button id="addSlideBtn">➕ إضافة سلايد</button>
         <button id="exportBtn">📤 تصدير العرض</button>
+        <button id="refreshDataBtn" class="ghost">🔄 تحديث البيانات</button>
       </div>
     </header>
 
@@ -316,6 +326,14 @@
         <input type="text" id="notes" placeholder="ملاحظات إضافية">
       </div>
     </section>
+
+    <div class="debug-info">
+      <strong>معلومات التصحيح:</strong>
+      <div>عدد السجلات المحملة: <span id="recordCount">0</span></div>
+      <div>آخر تحديث: <span id="lastUpdate">-</span></div>
+      <button id="toggleDebugBtn" style="background:transparent; border:none; color:#0b71eb; text-decoration:underline; cursor:pointer; padding:0; margin-top:5px;">إظهار/إخفاء البيانات</button>
+      <div id="debugData" style="display:none; margin-top:8px; max-height:150px; overflow:auto;"></div>
+    </div>
 
     <main>
       <section class="slide-area">
@@ -358,45 +376,109 @@
       }, time);
     }
 
-    // ✅ تحميل البيانات من Google Sheets
+    // تحديث معلومات التصحيح
+    function updateDebugInfo() {
+      document.getElementById('recordCount').textContent = excelData.length;
+      document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+      
+      const debugDataEl = document.getElementById('debugData');
+      if (excelData.length > 0) {
+        debugDataEl.innerHTML = '<pre>' + JSON.stringify(excelData.slice(0, 5), null, 2) + '</pre>';
+      }
+    }
+
+    // ✅ تحميل البيانات من Google Sheets - نسخة محسنة
     const SHEET_URL = "https://docs.google.com/spreadsheets/d/1N6b3EQdXS4X8fMtHZ04tHkwKTOgNzQyuLVA-V7HZzOk/gviz/tq?tqx=out:json";
 
     async function loadSheetData() {
       try {
         showToast('جاري تحميل بيانات العملاء...', 'info');
-        const res = await fetch(SHEET_URL);
+        
+        // إضافة طابع زمني لمنع التخزين المؤقت
+        const url = SHEET_URL + '&t=' + new Date().getTime();
+        const res = await fetch(url);
         
         if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
+          throw new Error(`خطأ في HTTP! الحالة: ${res.status}`);
         }
         
         const text = await res.text();
-        console.log('Raw response:', text.substring(0, 200)); // لأغراض debugging
+        console.log('الرد الخام:', text.substring(0, 200));
         
-        const json = JSON.parse(text.substr(47).slice(0, -2));
-        console.log('Parsed data:', json); // لأغراض debugging
+        // معالجة مختلفة للبيانات
+        let json;
+        try {
+          // المحاولة الأولى - الطريقة الأصلية
+          json = JSON.parse(text.substr(47).slice(0, -2));
+        } catch (parseError) {
+          console.log('المحاولة الأولى فشلت، جرب طريقة بديلة:', parseError);
+          // المحاولة الثانية - البحث عن JSON في النص
+          const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(({.*})\);/);
+          if (jsonMatch && jsonMatch[1]) {
+            json = JSON.parse(jsonMatch[1]);
+          } else {
+            throw new Error('لا يمكن تحليل بيانات الرد');
+          }
+        }
 
-        excelData = json.table.rows.map((r, index) => {
-          // تحقق من وجود البيانات في كل خلية
-          return {
-            "Merch Code": String(r.c[0]?.v ?? '').trim(),
-            "Acc-Code": String(r.c[1]?.v ?? '').trim(),
-            "Customer Name": String(r.c[2]?.v ?? '').trim(),
-            "Customer Address": String(r.c[3]?.v ?? '').trim(),
-            "Customer Type": String(r.c[4]?.v ?? '').trim(),
-            "Gov.": String(r.c[5]?.v ?? '').trim(),
-            "Notes": String(r.c[6]?.v ?? '').trim()
-          };
-        });
+        console.log('البيانات المحللة:', json);
 
-        console.log('Processed excelData:', excelData); // لأغراض debugging
+        // معالجة البيانات بطرق مختلفة
+        if (json.table && json.table.rows) {
+          excelData = json.table.rows.map((row, index) => {
+            // معالجة أكثر قوة للبيانات
+            const processCell = (cell) => {
+              if (!cell) return '';
+              // معالجة أنواع مختلفة من البيانات
+              if (cell.v !== null && cell.v !== undefined) {
+                if (typeof cell.v === 'object' && cell.v !== null) {
+                  return String(cell.v);
+                }
+                return String(cell.v);
+              }
+              if (cell.f !== null && cell.f !== undefined) {
+                return String(cell.f);
+              }
+              return '';
+            };
+
+            return {
+              "Merch Code": processCell(row.c[0]).trim(),
+              "Acc-Code": processCell(row.c[1]).trim(),
+              "Customer Name": processCell(row.c[2]).trim(),
+              "Customer Address": processCell(row.c[3]).trim(),
+              "Customer Type": processCell(row.c[4]).trim(),
+              "Gov.": processCell(row.c[5]).trim(),
+              "Notes": processCell(row.c[6]).trim()
+            };
+          }).filter(item => item["Merch Code"] !== ''); // تصفية العناصر الفارغة
+
+        } else if (json.rows) {
+          // تنسيق بدليل للبيانات
+          excelData = json.rows.map((row, index) => {
+            return {
+              "Merch Code": String(row[0] || '').trim(),
+              "Acc-Code": String(row[1] || '').trim(),
+              "Customer Name": String(row[2] || '').trim(),
+              "Customer Address": String(row[3] || '').trim(),
+              "Customer Type": String(row[4] || '').trim(),
+              "Gov.": String(row[5] || '').trim(),
+              "Notes": String(row[6] || '').trim()
+            };
+          }).filter(item => item["Merch Code"] !== '');
+        } else {
+          throw new Error('تنسيق بيانات غير معروف');
+        }
+
+        console.log('بيانات Excel المعالجة:', excelData);
+        updateDebugInfo();
         showToast(`تم تحميل ${excelData.length} سجل من بيانات العملاء`, 'success');
         
       } catch (err) {
-        console.error('Error loading sheet data:', err);
-        showToast('فشل تحميل بيانات العملاء. تأكد من اتصال الإنترنت.', 'error');
+        console.error('خطأ في تحميل بيانات الورقة:', err);
+        showToast('فشل تحميل بيانات العملاء. جاري استخدام بيانات تجريبية.', 'error');
         
-        // بيانات تجريبية للاختبار
+        // بيانات تجريبية أكثر شمولاً للاختبار
         excelData = [
           {
             "Merch Code": "12345",
@@ -415,8 +497,27 @@
             "Customer Type": "موزع",
             "Gov.": "الجيزة",
             "Notes": "يحتاج متابعة"
+          },
+          {
+            "Merch Code": "11223",
+            "Acc-Code": "ACC003",
+            "Customer Name": "فاطمة حسن",
+            "Customer Address": "الإسكندرية - سموحة",
+            "Customer Type": "مورد",
+            "Gov.": "الإسكندرية",
+            "Notes": "تسليم سريع"
+          },
+          {
+            "Merch Code": "44556",
+            "Acc-Code": "ACC004",
+            "Customer Name": "خالد إبراهيم",
+            "Customer Address": "المنصورة - شارع الجمهورية",
+            "Customer Type": "تاجر جملة",
+            "Gov.": "الدقهلية",
+            "Notes": "طلبات كبيرة"
           }
         ];
+        updateDebugInfo();
         showToast('تم تحميل بيانات تجريبية للاختبار', 'info');
       }
     }
@@ -424,7 +525,7 @@
     // تحميل البيانات عند بدء التشغيل
     loadSheetData();
 
-    // 🧠 تعبئة البيانات عند كتابة Merch Code
+    // 🧠 تعبئة البيانات عند كتابة Merch Code - نسخة محسنة
     document.getElementById('merchCode').addEventListener('input', () => {
       const code = document.getElementById('merchCode').value.trim();
       
@@ -439,15 +540,22 @@
         return;
       }
 
-      // البحث في البيانات
+      // البحث في البيانات بطرق مطابقة مختلفة
       const match = excelData.find(item => {
         const merchCode = String(item['Merch Code'] || '').trim();
         
-        // محاولات مطابقة مختلفة
+        // 1. المطابقة التامة
         if (merchCode === code) return true;
+        
+        // 2. إزالة الأصفار من البداية والمقارنة
         if (merchCode.replace(/^0+/, '') === code.replace(/^0+/, '')) return true;
-        if (merchCode.padStart(Math.max(merchCode.length, code.length), '0') === 
-            code.padStart(Math.max(merchCode.length, code.length), '0')) return true;
+        
+        // 3. جعل الأطوال متساوية بإضافة أصفار والمقارنة
+        const maxLength = Math.max(merchCode.length, code.length);
+        if (merchCode.padStart(maxLength, '0') === code.padStart(maxLength, '0')) return true;
+        
+        // 4. البحث الجزئي (يحتوي على)
+        if (merchCode.includes(code) || code.includes(merchCode)) return true;
         
         return false;
       });
@@ -640,6 +748,17 @@
       }
     });
 
+    // زر تحديث البيانات
+    document.getElementById('refreshDataBtn').addEventListener('click', () => {
+      loadSheetData();
+    });
+
+    // زر إظهار/إخفاء بيانات التصحيح
+    document.getElementById('toggleDebugBtn').addEventListener('click', () => {
+      const debugDataEl = document.getElementById('debugData');
+      debugDataEl.style.display = debugDataEl.style.display === 'none' ? 'block' : 'none';
+    });
+
     // تصدير العرض التقديمي
     document.getElementById('exportBtn').addEventListener('click', async () => {
       // التحقق من وجود صور
@@ -753,15 +872,6 @@
 
     // التهيئة الأولية
     renderCurrentSlide();
-    
-    // أضف هذا للتحقق من البيانات في الوقت الفعلي
-    setTimeout(() => {
-      console.log('Excel Data loaded:', excelData);
-      if (excelData.length > 0) {
-        console.log('First item:', excelData[0]);
-        console.log('Available Merch Codes:', excelData.map(item => item['Merch Code']));
-      }
-    }, 2000);
   </script>
 </body>
 </html>
