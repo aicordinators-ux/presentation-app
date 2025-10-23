@@ -358,44 +358,98 @@
       }, time);
     }
 
-    // تحميل البيانات من Google Sheets
+    // ✅ تحميل البيانات من Google Sheets
     const SHEET_URL = "https://docs.google.com/spreadsheets/d/1N6b3EQdXS4X8fMtHZ04tHkwKTOgNzQyuLVA-V7HZzOk/gviz/tq?tqx=out:json";
 
     async function loadSheetData() {
       try {
-        showToast('جاري تحميل البيانات...', 'info');
+        showToast('جاري تحميل بيانات العملاء...', 'info');
         const res = await fetch(SHEET_URL);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
         const text = await res.text();
+        console.log('Raw response:', text.substring(0, 200)); // لأغراض debugging
+        
         const json = JSON.parse(text.substr(47).slice(0, -2));
+        console.log('Parsed data:', json); // لأغراض debugging
 
-        excelData = json.table.rows.map(r => ({
-          "Merch Code": String(r.c[0]?.v ?? ''),
-          "Acc-Code": String(r.c[1]?.v ?? ''),
-          "Customer Name": String(r.c[2]?.v ?? ''),
-          "Customer Address": String(r.c[3]?.v ?? ''),
-          "Customer Type": String(r.c[4]?.v ?? ''),
-          "Gov.": String(r.c[5]?.v ?? ''),
-          "Notes": String(r.c[6]?.v ?? '')
-        }));
+        excelData = json.table.rows.map((r, index) => {
+          // تحقق من وجود البيانات في كل خلية
+          return {
+            "Merch Code": String(r.c[0]?.v ?? '').trim(),
+            "Acc-Code": String(r.c[1]?.v ?? '').trim(),
+            "Customer Name": String(r.c[2]?.v ?? '').trim(),
+            "Customer Address": String(r.c[3]?.v ?? '').trim(),
+            "Customer Type": String(r.c[4]?.v ?? '').trim(),
+            "Gov.": String(r.c[5]?.v ?? '').trim(),
+            "Notes": String(r.c[6]?.v ?? '').trim()
+          };
+        });
 
-        showToast('تم تحميل بيانات العملاء بنجاح', 'success');
+        console.log('Processed excelData:', excelData); // لأغراض debugging
+        showToast(`تم تحميل ${excelData.length} سجل من بيانات العملاء`, 'success');
+        
       } catch (err) {
-        console.error(err);
-        showToast('فشل تحميل بيانات العملاء', 'error');
+        console.error('Error loading sheet data:', err);
+        showToast('فشل تحميل بيانات العملاء. تأكد من اتصال الإنترنت.', 'error');
+        
+        // بيانات تجريبية للاختبار
+        excelData = [
+          {
+            "Merch Code": "12345",
+            "Acc-Code": "ACC001",
+            "Customer Name": "محمد أحمد",
+            "Customer Address": "القاهرة - مصر الجديدة",
+            "Customer Type": "تاجر",
+            "Gov.": "القاهرة",
+            "Notes": "عميل ممتاز"
+          },
+          {
+            "Merch Code": "67890",
+            "Acc-Code": "ACC002", 
+            "Customer Name": "علي محمود",
+            "Customer Address": "الجيزة - الدقي",
+            "Customer Type": "موزع",
+            "Gov.": "الجيزة",
+            "Notes": "يحتاج متابعة"
+          }
+        ];
+        showToast('تم تحميل بيانات تجريبية للاختبار', 'info');
       }
     }
 
     // تحميل البيانات عند بدء التشغيل
     loadSheetData();
 
-    // تعبئة البيانات عند كتابة Merch Code
+    // 🧠 تعبئة البيانات عند كتابة Merch Code
     document.getElementById('merchCode').addEventListener('input', () => {
       const code = document.getElementById('merchCode').value.trim();
+      
+      // إذا كان الحقل فارغ، امسح باقي الحقول
+      if (code === '') {
+        document.getElementById('accCode').value = '';
+        document.getElementById('custName').value = '';
+        document.getElementById('custAddress').value = '';
+        document.getElementById('custType').value = '';
+        document.getElementById('custGov').value = '';
+        document.getElementById('notes').value = '';
+        return;
+      }
 
-      // البحث عن التاجر في البيانات
-      const match = excelData.find(r => {
-        const sheetCode = String(r['Merch Code'] || '').trim();
-        return sheetCode === code || sheetCode.replace(/^0+/, '') === code.replace(/^0+/, '');
+      // البحث في البيانات
+      const match = excelData.find(item => {
+        const merchCode = String(item['Merch Code'] || '').trim();
+        
+        // محاولات مطابقة مختلفة
+        if (merchCode === code) return true;
+        if (merchCode.replace(/^0+/, '') === code.replace(/^0+/, '')) return true;
+        if (merchCode.padStart(Math.max(merchCode.length, code.length), '0') === 
+            code.padStart(Math.max(merchCode.length, code.length), '0')) return true;
+        
+        return false;
       });
 
       if (match) {
@@ -699,6 +753,15 @@
 
     // التهيئة الأولية
     renderCurrentSlide();
+    
+    // أضف هذا للتحقق من البيانات في الوقت الفعلي
+    setTimeout(() => {
+      console.log('Excel Data loaded:', excelData);
+      if (excelData.length > 0) {
+        console.log('First item:', excelData[0]);
+        console.log('Available Merch Codes:', excelData.map(item => item['Merch Code']));
+      }
+    }, 2000);
   </script>
 </body>
 </html>
