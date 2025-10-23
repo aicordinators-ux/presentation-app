@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مصمم برزنتيشن — بيانات العملاء</title>
+  <style>
+    body { font-family: "Cairo", sans-serif; background: #f7f7f7; text-align: center; padding: 20px; }
+    h2 { color: #222; margin-bottom: 20px; }
+    input, textarea {
+      width: 90%; padding: 8px; margin: 5px; border-radius: 6px; border: 1px solid #ccc; text-align: center;
+    }
+    button {
+      padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; margin: 10px;
+    }
+    #addSlide { background: #007bff; color: white; }
+    #exportButton { background: #007bff; color: white; }
+    .image-box {
+      display: inline-block; width: 250px; height: 150px; border: 2px dashed #ccc;
+      border-radius: 12px; margin: 10px; vertical-align: top; background: #eef3ff;
+    }
+    .image-box img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+  </style>
+</head>
+<body>
+
+  <h2>مصمم برزنتيشن — بيانات العملاء</h2>
+
+  <button id="addSlide">➕ إضافة سلايد</button>
+  <button id="exportButton">🧾 تصدير العرض</button>
+
+  <div>
+    <label>Merch Code</label><br>
+    <input type="text" id="merchCode" placeholder="أدخل الكود">
+  </div>
+  <div>
+    <label>Acc-Code</label><br>
+    <input type="text" id="accCode" readonly>
+  </div>
+  <div>
+    <label>Customer Name</label><br>
+    <input type="text" id="customerName" readonly>
+  </div>
+  <div>
+    <label>Address</label><br>
+    <input type="text" id="address" readonly>
+  </div>
+  <div>
+    <label>Customer Type</label><br>
+    <input type="text" id="customerType" readonly>
+  </div>
+  <div>
+    <label>Gov.</label><br>
+    <input type="text" id="gov" readonly>
+  </div>
+  <div>
+    <label>Notes</label><br>
+    <textarea id="notes" rows="2"></textarea>
+  </div>
+
+  <div id="imageContainer">
+    <div class="image-box"><span>اضغط لاختيار صورة</span></div>
+    <div class="image-box"><span>اضغط لاختيار صورة</span></div>
+    <div class="image-box"><span>اضغط لاختيار صورة</span></div>
+  </div>
+
+  <p>اضغط على أي مربع لاختيار صورة من الكاميرا أو المعرض.</p>
+
+  <p>قائمة السلايدات:<br><strong>سلايد 1</strong></p>
+
+  <hr>
+  <p>Google Sheet بيانات</p>
+
+  <!-- 🔹 ربط Google Sheets -->
+  <script>
+    const sheetURL = "https://docs.google.com/spreadsheets/d/1N6b3EQdXS4X8fMtHZ04tHkwKTOgNzQyuLVA-V7HZzOk/gviz/tq?tqx=out:json";
+
+    document.getElementById("merchCode").addEventListener("change", async () => {
+      const code = document.getElementById("merchCode").value.trim();
+      if (!code) return;
+
+      try {
+        const res = await fetch(sheetURL);
+        const text = await res.text();
+        const json = JSON.parse(text.substr(47).slice(0, -2));
+        const rows = json.table.rows;
+
+        let found = false;
+        for (let r of rows) {
+          if (r.c[0] && r.c[0].v == code) {
+            found = true;
+            document.getElementById("accCode").value = r.c[1]?.v || "";
+            document.getElementById("customerName").value = r.c[2]?.v || "";
+            document.getElementById("address").value = r.c[3]?.v || "";
+            document.getElementById("customerType").value = r.c[4]?.v || "";
+            document.getElementById("gov").value = r.c[5]?.v || "";
+            break;
+          }
+        }
+
+        if (!found) alert("الكود غير موجود في الشيت.");
+      } catch (e) {
+        alert("حدث خطأ أثناء تحميل البيانات من الشيت.");
+      }
+    });
+  </script>
+
+  <!-- 🔹 اختيار الصور -->
+  <script>
+    document.querySelectorAll(".image-box").forEach(box => {
+      box.addEventListener("click", () => {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.capture = "environment";
+        input.onchange = e => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = ev => {
+            box.innerHTML = `<img src="${ev.target.result}" alt="صورة العميل">`;
+          };
+          reader.readAsDataURL(file);
+        };
+        input.click();
+      });
+    });
+  </script>
+
+  <!-- 🔹 مكتبة إنشاء PowerPoint -->
+  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.9.0/dist/pptxgen.min.js"></script>
+
+  <!-- 🔹 تصدير العرض -->
+  <script>
+    document.getElementById("exportButton").addEventListener("click", function () {
+      const merchCode = document.getElementById("merchCode").value || "";
+      const accCode = document.getElementById("accCode").value || "";
+      const customerName = document.getElementById("customerName").value || "";
+      const address = document.getElementById("address").value || "";
+      const customerType = document.getElementById("customerType").value || "";
+      const gov = document.getElementById("gov").value || "";
+      const notes = document.getElementById("notes").value || "";
+
+      let pptx = new PptxGenJS();
+      let slide = pptx.addSlide();
+
+      slide.addText("بيانات العميل", { x: 1, y: 0.4, fontSize: 28, bold: true, color: "003366" });
+
+      const info = [
+        `Merch Code: ${merchCode}`,
+        `Acc-Code: ${accCode}`,
+        `Customer Name: ${customerName}`,
+        `Address: ${address}`,
+        `Customer Type: ${customerType}`,
+        `Gov: ${gov}`,
+        `Notes: ${notes}`
+      ];
+
+      let y = 1.2;
+      info.forEach(line => {
+        slide.addText(line, { x: 1, y, fontSize: 16, color: "000000" });
+        y += 0.4;
+      });
+
+      pptx.writeFile({ fileName: `presentation_${merchCode || "client"}.pptx` });
+    });
+  </script>
+
+</body>
+</html>
