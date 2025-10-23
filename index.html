@@ -478,50 +478,6 @@
         console.error('خطأ في تحميل بيانات الورقة:', err);
         showToast('فشل تحميل بيانات العملاء. جاري استخدام بيانات تجريبية.', 'error');
         
-        // بيانات تجريبية أكثر شمولاً للاختبار
-        excelData = [
-          {
-            "Merch Code": "12345",
-            "Acc-Code": "ACC001",
-            "Customer Name": "محمد أحمد",
-            "Customer Address": "القاهرة - مصر الجديدة",
-            "Customer Type": "تاجر",
-            "Gov.": "القاهرة",
-            "Notes": "عميل ممتاز"
-          },
-          {
-            "Merch Code": "67890",
-            "Acc-Code": "ACC002", 
-            "Customer Name": "علي محمود",
-            "Customer Address": "الجيزة - الدقي",
-            "Customer Type": "موزع",
-            "Gov.": "الجيزة",
-            "Notes": "يحتاج متابعة"
-          },
-          {
-            "Merch Code": "11223",
-            "Acc-Code": "ACC003",
-            "Customer Name": "فاطمة حسن",
-            "Customer Address": "الإسكندرية - سموحة",
-            "Customer Type": "مورد",
-            "Gov.": "الإسكندرية",
-            "Notes": "تسليم سريع"
-          },
-          {
-            "Merch Code": "44556",
-            "Acc-Code": "ACC004",
-            "Customer Name": "خالد إبراهيم",
-            "Customer Address": "المنصورة - شارع الجمهورية",
-            "Customer Type": "تاجر جملة",
-            "Gov.": "الدقهلية",
-            "Notes": "طلبات كبيرة"
-          }
-        ];
-        updateDebugInfo();
-        showToast('تم تحميل بيانات تجريبية للاختبار', 'info');
-      }
-    }
-
     // تحميل البيانات عند بدء التشغيل
     loadSheetData();
 
