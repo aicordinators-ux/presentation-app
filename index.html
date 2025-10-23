@@ -255,15 +255,6 @@
       margin-top: 15px;
     }
     
-    .debug-info {
-      background: #f5f5f5;
-      padding: 10px;
-      border-radius: 6px;
-      margin-top: 10px;
-      font-size: 12px;
-      color: #666;
-    }
-    
     @media (max-width: 768px) {
       .placeholders {
         grid-template-columns: 1fr;
@@ -327,15 +318,6 @@
       </div>
     </section>
 
-    <div class="debug-info">
-      <strong>معلومات التصحيح:</strong>
-      <div>عدد السجلات المحملة: <span id="recordCount">0</span></div>
-      <div>آخر تحديث: <span id="lastUpdate">-</span></div>
-      <div>حالة التحميل: <span id="loadStatus">-</span></div>
-      <button id="toggleDebugBtn" style="background:transparent; border:none; color:#0b71eb; text-decoration:underline; cursor:pointer; padding:0; margin-top:5px;">إظهار/إخفاء البيانات</button>
-      <div id="debugData" style="display:none; margin-top:8px; max-height:150px; overflow:auto;"></div>
-    </div>
-
     <main>
       <section class="slide-area">
         <div class="placeholders" id="placeholders"></div>
@@ -377,175 +359,87 @@
       }, time);
     }
 
-    // تحديث معلومات التصحيح
-    function updateDebugInfo(status = '') {
-      document.getElementById('recordCount').textContent = excelData.length;
-      document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
-      if (status) {
-        document.getElementById('loadStatus').textContent = status;
-      }
-      
-      const debugDataEl = document.getElementById('debugData');
-      if (excelData.length > 0) {
-        debugDataEl.innerHTML = '<pre>' + JSON.stringify(excelData.slice(0, 5), null, 2) + '</pre>';
-      } else {
-        debugDataEl.innerHTML = 'لا توجد بيانات';
-      }
-    }
-
-    // ✅ تحميل البيانات من Google Sheets - نسخة محسنة بشكل كبير
+    // ✅ تحميل البيانات من Google Sheets
     const SHEET_URL = "https://docs.google.com/spreadsheets/d/1N6b3EQdXS4X8fMtHZ04tHkwKTOgNzQyuLVA-V7HZzOk/gviz/tq?tqx=out:json";
 
     async function loadSheetData() {
       try {
         showToast('جاري تحميل بيانات العملاء...', 'info');
-        updateDebugInfo('جاري التحميل...');
         
         // إضافة طابع زمني لمنع التخزين المؤقت
         const url = SHEET_URL + '&t=' + new Date().getTime();
         const res = await fetch(url);
         
         if (!res.ok) {
-          throw new Error(`خطأ في HTTP! الحالة: ${res.status}`);
+          throw new Error(`خطأ في تحميل البيانات`);
         }
         
         const text = await res.text();
-        console.log('الرد الخام:', text);
         
         // محاولات متعددة لتحليل JSON
         let json;
-        let parseError;
         
-        // المحاولة 1: الطريقة الأصلية
         try {
-          json = JSON.parse(text.substring(47).slice(0, -2));
-          console.log('تم التحليل بالطريقة الأصلية');
+          // المحاولة الأولى - الطريقة الأصلية
+          json = JSON.parse(text.substr(47).slice(0, -2));
         } catch (e1) {
-          parseError = e1;
-          console.log('فشل المحاولة 1:', e1);
-          
-          // المحاولة 2: البحث عن JSON في النص
-          try {
-            const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(({.*})\);/);
-            if (jsonMatch && jsonMatch[1]) {
-              json = JSON.parse(jsonMatch[1]);
-              console.log('تم التحليل بالطريقة البديلة 1');
-            } else {
-              throw new Error('لا يمكن العثور على JSON في النص');
-            }
-          } catch (e2) {
-            parseError = e2;
-            console.log('فشل المحاولة 2:', e2);
-            
-            // المحاولة 3: معالجة مباشرة للنص
-            try {
-              // إزالة البادئة واللاحقة يدوياً
-              let cleanedText = text;
-              if (cleanedText.startsWith('/*O_o*/')) {
-                cleanedText = cleanedText.substring(7);
-              }
-              if (cleanedText.startsWith('google.visualization.Query.setResponse(')) {
-                cleanedText = cleanedText.substring(41);
-              }
-              if (cleanedText.endsWith(');')) {
-                cleanedText = cleanedText.substring(0, cleanedText.length - 2);
-              }
-              
-              json = JSON.parse(cleanedText);
-              console.log('تم التحليل بالطريقة البديلة 2');
-            } catch (e3) {
-              console.log('فشل المحاولة 3:', e3);
-              throw new Error('فشل في تحليل JSON بعد 3 محاولات');
-            }
+          // المحاولة الثانية - البحث عن JSON في النص
+          const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(({.*})\);/);
+          if (jsonMatch && jsonMatch[1]) {
+            json = JSON.parse(jsonMatch[1]);
+          } else {
+            throw new Error('لا يمكن تحليل بيانات الرد');
           }
         }
 
-        console.log('البيانات المحللة:', json);
-
-        // معالجة البيانات بطرق مختلفة
+        // معالجة البيانات
         if (json.table && json.table.rows) {
-          console.log('معالجة البيانات باستخدام json.table.rows');
           excelData = json.table.rows.map((row, index) => {
-            try {
-              // معالجة أكثر قوة للبيانات
-              const processCell = (cell, cellIndex) => {
-                if (!cell) {
-                  console.log(`الخلية ${cellIndex} فارغة في الصف ${index}`);
-                  return '';
-                }
-                
-                // معالجة أنواع مختلفة من البيانات
-                let value = '';
-                
-                if (cell.v !== null && cell.v !== undefined) {
-                  value = String(cell.v);
-                } else if (cell.f !== null && cell.f !== undefined) {
-                  value = String(cell.f);
-                }
-                
-                return value.trim();
-              };
-
-              const rowData = {
-                "Merch Code": processCell(row.c[0], 0),
-                "Acc-Code": processCell(row.c[1], 1),
-                "Customer Name": processCell(row.c[2], 2),
-                "Customer Address": processCell(row.c[3], 3),
-                "Customer Type": processCell(row.c[4], 4),
-                "Gov.": processCell(row.c[5], 5),
-                "Notes": processCell(row.c[6], 6)
-              };
-
-              // تسجيل بيانات الصف للمساعدة في التصحيح
-              if (index < 3) {
-                console.log(`الصف ${index}:`, rowData);
+            // معالجة أكثر قوة للبيانات
+            const processCell = (cell) => {
+              if (!cell) return '';
+              if (cell.v !== null && cell.v !== undefined) {
+                return String(cell.v);
               }
+              if (cell.f !== null && cell.f !== undefined) {
+                return String(cell.f);
+              }
+              return '';
+            };
 
-              return rowData;
-            } catch (rowError) {
-              console.error(`خطأ في معالجة الصف ${index}:`, rowError, row);
-              return null;
-            }
-          }).filter(item => item !== null && item["Merch Code"] !== ''); // تصفية العناصر الفارغة والملفات التالفة
+            return {
+              "Merch Code": processCell(row.c[0]).trim(),
+              "Acc-Code": processCell(row.c[1]).trim(),
+              "Customer Name": processCell(row.c[2]).trim(),
+              "Customer Address": processCell(row.c[3]).trim(),
+              "Customer Type": processCell(row.c[4]).trim(),
+              "Gov.": processCell(row.c[5]).trim(),
+              "Notes": processCell(row.c[6]).trim()
+            };
+          }).filter(item => item["Merch Code"] !== '');
 
         } else if (json.rows) {
-          console.log('معالجة البيانات باستخدام json.rows');
           // تنسيق بدليل للبيانات
           excelData = json.rows.map((row, index) => {
-            try {
-              const rowData = {
-                "Merch Code": String(row[0] || '').trim(),
-                "Acc-Code": String(row[1] || '').trim(),
-                "Customer Name": String(row[2] || '').trim(),
-                "Customer Address": String(row[3] || '').trim(),
-                "Customer Type": String(row[4] || '').trim(),
-                "Gov.": String(row[5] || '').trim(),
-                "Notes": String(row[6] || '').trim()
-              };
-
-              if (index < 3) {
-                console.log(`الصف ${index}:`, rowData);
-              }
-
-              return rowData;
-            } catch (rowError) {
-              console.error(`خطأ في معالجة الصف ${index}:`, rowError, row);
-              return null;
-            }
-          }).filter(item => item !== null && item["Merch Code"] !== '');
+            return {
+              "Merch Code": String(row[0] || '').trim(),
+              "Acc-Code": String(row[1] || '').trim(),
+              "Customer Name": String(row[2] || '').trim(),
+              "Customer Address": String(row[3] || '').trim(),
+              "Customer Type": String(row[4] || '').trim(),
+              "Gov.": String(row[5] || '').trim(),
+              "Notes": String(row[6] || '').trim()
+            };
+          }).filter(item => item["Merch Code"] !== '');
         } else {
-          console.log('هيكل JSON غير متوقع:', json);
           throw new Error('تنسيق بيانات غير معروف');
         }
 
-        console.log('بيانات Excel المعالجة:', excelData);
-        updateDebugInfo('تم التحميل بنجاح');
         showToast(`تم تحميل ${excelData.length} سجل من بيانات العملاء`, 'success');
         
       } catch (err) {
         console.error('خطأ في تحميل بيانات الورقة:', err);
-        updateDebugInfo('فشل التحميل');
-        showToast('فشل تحميل بيانات العملاء. تأكد من اتصال الإنترنت وصحة رابط الـ Sheet.', 'error');
+        showToast('فشل تحميل بيانات العملاء. تأكد من اتصال الإنترنت.', 'error');
         excelData = [];
       }
     }
@@ -553,7 +447,7 @@
     // تحميل البيانات عند بدء التشغيل
     loadSheetData();
 
-    // 🧠 تعبئة البيانات عند كتابة Merch Code - نسخة محسنة
+    // 🧠 تعبئة البيانات عند كتابة Merch Code
     document.getElementById('merchCode').addEventListener('input', () => {
       const code = document.getElementById('merchCode').value.trim();
       
@@ -568,24 +462,15 @@
         return;
       }
 
-      // البحث في البيانات بطرق مطابقة مختلفة
+      // البحث في البيانات
       const match = excelData.find(item => {
-        if (!item || !item["Merch Code"]) return false;
+        const merchCode = String(item['Merch Code'] || '').trim();
         
-        const merchCode = String(item["Merch Code"]).trim();
-        
-        // 1. المطابقة التامة
+        // محاولات مطابقة مختلفة
         if (merchCode === code) return true;
-        
-        // 2. إزالة الأصفار من البداية والمقارنة
         if (merchCode.replace(/^0+/, '') === code.replace(/^0+/, '')) return true;
-        
-        // 3. جعل الأطوال متساوية بإضافة أصفار والمقارنة
-        const maxLength = Math.max(merchCode.length, code.length);
-        if (merchCode.padStart(maxLength, '0') === code.padStart(maxLength, '0')) return true;
-        
-        // 4. البحث الجزئي (يحتوي على)
-        if (merchCode.includes(code) || code.includes(merchCode)) return true;
+        if (merchCode.padStart(Math.max(merchCode.length, code.length), '0') === 
+            code.padStart(Math.max(merchCode.length, code.length), '0')) return true;
         
         return false;
       });
@@ -598,9 +483,6 @@
         document.getElementById('custGov').value = match['Gov.'] || '';
         document.getElementById('notes').value = match['Notes'] || '';
         showToast('تم تحميل بيانات العميل', 'success');
-        
-        // تسجيل للمساعدة في التصحيح
-        console.log('تم العثور على تطابق:', match);
       } else {
         // مسح الحقول إذا لم يتم العثور على التاجر
         document.getElementById('accCode').value = '';
@@ -612,13 +494,10 @@
         
         if (code.length > 0) {
           showToast('لم يتم العثور على بيانات لهذا الكود', 'error');
-          console.log('لم يتم العثور على تطابق للكود:', code);
-          console.log('الأكواد المتاحة:', excelData.map(item => item["Merch Code"]));
         }
       }
     });
 
-    // باقي الكود بدون تغيير...
     // فتح نافذة اختيار الصورة
     function openImagePicker(idx) {
       pendingIdx = idx;
@@ -787,12 +666,6 @@
     // زر تحديث البيانات
     document.getElementById('refreshDataBtn').addEventListener('click', () => {
       loadSheetData();
-    });
-
-    // زر إظهار/إخفاء بيانات التصحيح
-    document.getElementById('toggleDebugBtn').addEventListener('click', () => {
-      const debugDataEl = document.getElementById('debugData');
-      debugDataEl.style.display = debugDataEl.style.display === 'none' ? 'block' : 'none';
     });
 
     // تصدير العرض التقديمي
