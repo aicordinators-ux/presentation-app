@@ -1,32 +1,282 @@
 <!doctype html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>مصمم برزنتيشن مع بيانات العملاء</title>
   <script src="https://unpkg.com/pptxgenjs@3.9.0/dist/pptxgen.bundle.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
-    :root{--bg:#f7f7f8;--card:#fff;--accent:#0b71eb;--muted:#666}
-    html,body{height:100%;margin:0;font-family:Tahoma, Arial, sans-serif;background:var(--bg);color:#111}
-    .app{max-width:980px;margin:12px auto;padding:14px}
-    header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-    h1{font-size:18px;margin:0}
-    .controls{display:flex;gap:8px}
-    button{background:var(--accent);color:#fff;border:none;padding:10px 12px;border-radius:8px;font-weight:600;cursor:pointer}
-    button.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,113,235,.15)}
-    main{margin-top:12px}
-    .slide-area{background:var(--card);padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(10,10,10,.04)}
-    .placeholders{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-    .ph{position:relative;padding-top:56.25%;background:linear-gradient(180deg,#eef2ff,#fff);border-radius:8px;border:2px dashed rgba(0,0,0,.06);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}
-    .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-    .ph .label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;padding:4px}
-    .small{font-size:13px;color:var(--muted);margin-top:10px}
-    input[type="text"]{padding:8px;border-radius:6px;border:1px solid #ccc;font-size:14px;width:100%}
-    .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:10px;margin-bottom:10px}
+    :root {
+      --bg: #f7f7f8;
+      --card: #fff;
+      --accent: #0b71eb;
+      --muted: #666;
+      --error: #e53935;
+      --success: #43a047;
+    }
+    
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: Tahoma, Arial, sans-serif;
+      background: var(--bg);
+      color: #111;
+    }
+    
+    .app {
+      max-width: 980px;
+      margin: 12px auto;
+      padding: 14px;
+    }
+    
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    
+    h1 {
+      font-size: 18px;
+      margin: 0;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 8px;
+    }
+    
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    button:hover {
+      background: #095ac5;
+    }
+    
+    button.ghost {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid rgba(11, 113, 235, 0.15);
+    }
+    
+    button.ghost:hover {
+      background: rgba(11, 113, 235, 0.05);
+    }
+    
+    main {
+      margin-top: 12px;
+    }
+    
+    .slide-area {
+      background: var(--card);
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 6px 18px rgba(10, 10, 10, 0.04);
+      margin-bottom: 20px;
+    }
+    
+    .placeholders {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    
+    .ph {
+      position: relative;
+      padding-top: 56.25%;
+      background: linear-gradient(180deg, #eef2ff, #fff);
+      border-radius: 8px;
+      border: 2px dashed rgba(0, 0, 0, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    
+    .ph:hover {
+      border-color: var(--accent);
+    }
+    
+    .ph img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .ph .label {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      padding: 4px;
+    }
+    
+    .small {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+    
+    input[type="text"] {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+      margin-bottom: 20px;
+      background: var(--card);
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .form-grid div {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .form-grid label {
+      font-size: 12px;
+      margin-bottom: 4px;
+      color: var(--muted);
+    }
+    
+    .slides-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    
+    .slide-thumb {
+      background: var(--card);
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid #eee;
+      transition: all 0.2s;
+    }
+    
+    .slide-thumb:hover {
+      border-color: var(--accent);
+    }
+    
+    .slide-thumb.active {
+      background: var(--accent);
+      color: white;
+    }
+    
+    footer {
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .toast {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .toast.error {
+      background: var(--error);
+    }
+    
+    .toast.success {
+      background: var(--success);
+    }
+    
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1001;
+    }
+    
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      min-width: 240px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+    
+    .modal-buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 15px;
+    }
+    
+    @media (max-width: 768px) {
+      .placeholders {
+        grid-template-columns: 1fr;
+      }
+      
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
+      .controls {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
   </style>
 </head>
-<body dir="rtl">
+<body>
   <div class="app">
     <header>
       <h1>مصمم برزنتيشن — بيانات العملاء</h1>
@@ -37,13 +287,34 @@
     </header>
 
     <section class="form-grid">
-      <div><label>Merch Code</label><input type="text" id="merchCode"></div>
-      <div><label>Acc-Code</label><input type="text" id="accCode" readonly></div>
-      <div><label>Customer Name</label><input type="text" id="custName" readonly></div>
-      <div><label>Address</label><input type="text" id="custAddress" readonly></div>
-      <div><label>Customer Type</label><input type="text" id="custType" readonly></div>
-      <div><label>Gov.</label><input type="text" id="custGov" readonly></div>
-      <div><label>Notes</label><input type="text" id="notes"></div>
+      <div>
+        <label for="merchCode">Merch Code</label>
+        <input type="text" id="merchCode" placeholder="أدخل كود التاجر">
+      </div>
+      <div>
+        <label for="accCode">Acc-Code</label>
+        <input type="text" id="accCode" readonly>
+      </div>
+      <div>
+        <label for="custName">Customer Name</label>
+        <input type="text" id="custName" readonly>
+      </div>
+      <div>
+        <label for="custAddress">Address</label>
+        <input type="text" id="custAddress" readonly>
+      </div>
+      <div>
+        <label for="custType">Customer Type</label>
+        <input type="text" id="custType" readonly>
+      </div>
+      <div>
+        <label for="custGov">Gov.</label>
+        <input type="text" id="custGov" readonly>
+      </div>
+      <div>
+        <label for="notes">Notes</label>
+        <input type="text" id="notes" placeholder="ملاحظات إضافية">
+      </div>
     </section>
 
     <main>
@@ -51,22 +322,24 @@
         <div class="placeholders" id="placeholders"></div>
         <div class="small">اضغط على أي مربع لاختيار صورة من الكاميرا أو المعرض.</div>
       </section>
-      <section class="small">قائمة السلايدات:</section>
+      <div class="small">قائمة السلايدات:</div>
       <div class="slides-list" id="slidesList"></div>
       <input type="file" id="hiddenFileInput" accept="image/*" style="display:none" />
     </main>
 
     <footer>
       <div class="small">الصور سيتم ضغطها إلى 600px لتقليل الحجم.</div>
-      <div class="right"><button id="clearBtn" class="ghost">🗑️ تفريغ السلايدات</button></div>
+      <div>
+        <button id="clearBtn" class="ghost">🗑️ تفريغ السلايدات</button>
+      </div>
     </footer>
   </div>
 
-  <div class="toast" id="toast" style="display:none;position:fixed;bottom:20px;right:20px;background:#0b71eb;color:#fff;padding:10px 14px;border-radius:8px;font-size:14px;"></div>
+  <div class="toast" id="toast"></div>
 
   <script>
     let excelData = [];
-    let slides = [ [null,null,null] ];
+    let slides = [[null, null, null]];
     let currentIndex = 0;
     const MAX_WIDTH = 600;
     const placeholdersEl = document.getElementById('placeholders');
@@ -75,13 +348,22 @@
     const toast = document.getElementById('toast');
     let pendingIdx = 0;
 
-    function showToast(msg, time=3000){toast.textContent=msg;toast.style.display='block';setTimeout(()=>toast.style.display='none',time);}
+    // وظيفة لعرض الرسائل
+    function showToast(msg, type = 'info', time = 3000) {
+      toast.textContent = msg;
+      toast.className = 'toast ' + type;
+      toast.style.display = 'block';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, time);
+    }
 
-    // ✅ تحميل البيانات من Google Sheets
+    // تحميل البيانات من Google Sheets
     const SHEET_URL = "https://docs.google.com/spreadsheets/d/1N6b3EQdXS4X8fMtHZ04tHkwKTOgNzQyuLVA-V7HZzOk/gviz/tq?tqx=out:json";
 
     async function loadSheetData() {
       try {
+        showToast('جاري تحميل البيانات...', 'info');
         const res = await fetch(SHEET_URL);
         const text = await res.text();
         const json = JSON.parse(text.substr(47).slice(0, -2));
@@ -96,134 +378,327 @@
           "Notes": String(r.c[6]?.v ?? '')
         }));
 
-        showToast('تم تحميل بيانات Google Sheet بنجاح ✅');
+        showToast('تم تحميل بيانات العملاء بنجاح', 'success');
       } catch (err) {
         console.error(err);
-        showToast('فشل تحميل بيانات Google Sheet ❌');
+        showToast('فشل تحميل بيانات العملاء', 'error');
       }
     }
+
+    // تحميل البيانات عند بدء التشغيل
     loadSheetData();
 
-    // 🧠 تعبئة البيانات عند كتابة Merch Code
-  document.getElementById('merchCode').addEventListener('input', ()=>{
-  const code = document.getElementById('merchCode').value.trim();
+    // تعبئة البيانات عند كتابة Merch Code
+    document.getElementById('merchCode').addEventListener('input', () => {
+      const code = document.getElementById('merchCode').value.trim();
 
-  // نحاول نعمل مطابقة مرنة بغض النظر عن الأصفار أو النوع
-  const match = excelData.find(r => {
-    const sheetCode = String(r['Merch Code'] || '').trim();
-    return sheetCode === code || sheetCode.replace(/^0+/, '') === code.replace(/^0+/, '');
-  });
+      // البحث عن التاجر في البيانات
+      const match = excelData.find(r => {
+        const sheetCode = String(r['Merch Code'] || '').trim();
+        return sheetCode === code || sheetCode.replace(/^0+/, '') === code.replace(/^0+/, '');
+      });
 
-  if(match){
-    document.getElementById('accCode').value = match['Acc-Code'] || '';
-    document.getElementById('custName').value = match['Customer Name'] || '';
-    document.getElementById('custAddress').value = match['Customer Address'] || '';
-    document.getElementById('custType').value = match['Customer Type'] || '';
-    document.getElementById('custGov').value = match['Gov.'] || '';
-    document.getElementById('notes').value = match['Notes'] || '';
-  } else {
-    document.querySelectorAll('#accCode,#custName,#custAddress,#custType,#custGov,#notes').forEach(el=>el.value='');
-  }
-});
+      if (match) {
+        document.getElementById('accCode').value = match['Acc-Code'] || '';
+        document.getElementById('custName').value = match['Customer Name'] || '';
+        document.getElementById('custAddress').value = match['Customer Address'] || '';
+        document.getElementById('custType').value = match['Customer Type'] || '';
+        document.getElementById('custGov').value = match['Gov.'] || '';
+        document.getElementById('notes').value = match['Notes'] || '';
+        showToast('تم تحميل بيانات العميل', 'success');
+      } else {
+        // مسح الحقول إذا لم يتم العثور على التاجر
+        document.getElementById('accCode').value = '';
+        document.getElementById('custName').value = '';
+        document.getElementById('custAddress').value = '';
+        document.getElementById('custType').value = '';
+        document.getElementById('custGov').value = '';
+        document.getElementById('notes').value = '';
+        
+        if (code.length > 0) {
+          showToast('لم يتم العثور على بيانات لهذا الكود', 'error');
+        }
+      }
+    });
 
-    // 📸 اختيار الصورة (كاميرا أو معرض)
-    function openImagePicker(idx){
+    // فتح نافذة اختيار الصورة
+    function openImagePicker(idx) {
       pendingIdx = idx;
-      const overlay = document.createElement('div');
-      overlay.style.position='fixed';
-      overlay.style.inset=0;
-      overlay.style.background='rgba(0,0,0,0.5)';
-      overlay.style.display='flex';
-      overlay.style.alignItems='center';
-      overlay.style.justifyContent='center';
-      overlay.style.zIndex='9999';
-      overlay.innerHTML = `
-        <div style="background:#fff;padding:20px;border-radius:12px;text-align:center;min-width:240px;">
-          <h3 style="margin-bottom:10px;">اختر المصدر</h3>
-          <button id="camBtn" style="background:#0b71eb;color:#fff;border:none;padding:10px 14px;border-radius:8px;margin:6px;">📷 الكاميرا</button>
-          <button id="galleryBtn" style="background:#2c8a2c;color:#fff;border:none;padding:10px 14px;border-radius:8px;margin:6px;">🖼️ المعرض</button>
-        </div>`;
-      document.body.appendChild(overlay);
+      
+      // إنشاء نافذة اختيار المصدر
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <h3 style="margin-bottom:10px;">اختر مصدر الصورة</h3>
+          <div class="modal-buttons">
+            <button id="camBtn" style="background:#0b71eb;color:#fff;border:none;padding:10px 14px;border-radius:8px;margin:6px;cursor:pointer;">📷 الكاميرا</button>
+            <button id="galleryBtn" style="background:#2c8a2c;color:#fff;border:none;padding:10px 14px;border-radius:8px;margin:6px;cursor:pointer;">🖼️ المعرض</button>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
 
-      // الكاميرا
-      overlay.querySelector('#camBtn').addEventListener('click', ()=>{
-        document.body.removeChild(overlay);
-        const camInput=document.createElement('input');
-        camInput.type='file';
-        camInput.accept='image/*;capture=camera';
-        camInput.style.display='none';
-        camInput.addEventListener('change',async e=>{
-          const file=e.target.files&&e.target.files[0];
-          if(file) await handleSelectedFile(file);
+      // إضافة حدث للكاميرا
+      modal.querySelector('#camBtn').addEventListener('click', () => {
+        document.body.removeChild(modal);
+        const camInput = document.createElement('input');
+        camInput.type = 'file';
+        camInput.accept = 'image/*';
+        camInput.capture = 'camera';
+        camInput.style.display = 'none';
+        camInput.addEventListener('change', async e => {
+          const file = e.target.files && e.target.files[0];
+          if (file) await handleSelectedFile(file);
+          camInput.remove();
         });
         document.body.appendChild(camInput);
         camInput.click();
-        camInput.addEventListener('blur',()=>setTimeout(()=>camInput.remove(),500));
       });
 
-      // المعرض
-      overlay.querySelector('#galleryBtn').addEventListener('click', ()=>{
-        document.body.removeChild(overlay);
-        hiddenInput.value='';
+      // إضافة حدث للمعرض
+      modal.querySelector('#galleryBtn').addEventListener('click', () => {
+        document.body.removeChild(modal);
+        hiddenInput.value = '';
         hiddenInput.click();
       });
 
-      // إغلاق النافذة عند الضغط بالخارج
-      overlay.addEventListener('click', e=>{
-        if(e.target===overlay) document.body.removeChild(overlay);
+      // إغلاق النافذة عند النقر خارجها
+      modal.addEventListener('click', e => {
+        if (e.target === modal) {
+          document.body.removeChild(modal);
+        }
       });
     }
 
-    async function handleSelectedFile(file){
-      if(!file) return;
-      showToast('جاري معالجة الصورة...');
-      const dataUrl = await fileToDataURL(file);
-      const resized = await resizeDataUrl(dataUrl, MAX_WIDTH, 0.8);
-      slides[currentIndex][pendingIdx] = resized;
-      renderCurrentSlide();
-      showToast('تم إضافة الصورة ✅');
+    // معالجة الملف المختار
+    async function handleSelectedFile(file) {
+      if (!file) return;
+      
+      showToast('جاري معالجة الصورة...', 'info');
+      
+      try {
+        const dataUrl = await fileToDataURL(file);
+        const resized = await resizeDataUrl(dataUrl, MAX_WIDTH, 0.8);
+        slides[currentIndex][pendingIdx] = resized;
+        renderCurrentSlide();
+        showToast('تم إضافة الصورة بنجاح', 'success');
+      } catch (error) {
+        console.error(error);
+        showToast('فشل في معالجة الصورة', 'error');
+      }
     }
 
-    function fileToDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});}
-    function resizeDataUrl(dataUrl,maxWidth,quality=0.85){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const ratio=img.width/img.height;const w=Math.min(maxWidth,img.width);const h=Math.round(w/ratio);const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',quality));};img.onerror=()=>rej(new Error('Image load error'));img.src=dataUrl;});}
-    hiddenInput.addEventListener('change',async e=>{const f=e.target.files&&e.target.files[0];await handleSelectedFile(f);});
-
-    function renderSlides(){slidesListEl.innerHTML='';slides.forEach((s,i)=>{const thumb=document.createElement('div');thumb.className='slide-thumb';thumb.textContent='سلايد '+(i+1);thumb.addEventListener('click',()=>{currentIndex=i;renderCurrentSlide();});slidesListEl.appendChild(thumb);});}
-    function renderCurrentSlide(){placeholdersEl.innerHTML='';slides[currentIndex].forEach((d,idx)=>{const ph=document.createElement('div');ph.className='ph';if(d){const img=document.createElement('img');img.src=d;ph.appendChild(img);}else{const l=document.createElement('div');l.className='label';l.textContent='اضغط لاختيار صورة';ph.appendChild(l);}ph.addEventListener('click',()=>openImagePicker(idx));placeholdersEl.appendChild(ph);});renderSlides();}
-    renderCurrentSlide();
-
-    document.getElementById('addSlideBtn').addEventListener('click',()=>{slides.push([null,null,null]);currentIndex=slides.length-1;renderCurrentSlide();});
-    document.getElementById('clearBtn').addEventListener('click',()=>{if(confirm('هل تريد حذف كل السلايدات؟')){slides=[ [null,null,null] ];currentIndex=0;renderCurrentSlide();}});
-
-    // 🎞️ تصدير العرض
-    document.getElementById('exportBtn').addEventListener('click', async ()=>{
-      const pptx = new PptxGenJS(); pptx.layout='LAYOUT_WIDE';
-      const merch = document.getElementById('merchCode').value;
-      const acc = document.getElementById('accCode').value;
-      const name = document.getElementById('custName').value;
-      const addr = document.getElementById('custAddress').value;
-      const type = document.getElementById('custType').value;
-      const gov = document.getElementById('custGov').value;
-      const notes = document.getElementById('notes').value;
-
-      slides.forEach(s=>{
-        const slide = pptx.addSlide();
-        const imgW=(13.33-(0.6*2)-0.3*2)/3;const imgH=4.5;
-        s.forEach((data,j)=>{
-          const x=0.6+j*(imgW+0.15);const y=1.0;
-          if(data) slide.addImage({data,x,y,w:imgW,h:imgH});
-          else {slide.addShape(pptx.ShapeType.rect,{x,y,w:imgW,h:imgH,fill:{color:'F7F7F7'},line:{color:'CCC'}});}
-        });
-        const rows=[
-          [{text:'Merch Code',bold:true},{text:'Acc-Code',bold:true},{text:'Customer Name',bold:true},{text:'Customer Address',bold:true},{text:'Customer Type',bold:true},{text:'Gov.',bold:true},{text:'Notes',bold:true}],
-          [merch,acc,name,addr,type,gov,notes]
-        ];
-        slide.addTable(rows,{x:0.3,y:6,w:12.5,fontSize:13,border:{pt:1,color:'999'},fill:{color:'F9F9F9'}});
+    // تحويل الملف إلى Data URL
+    function fileToDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
       });
+    }
 
-      await pptx.writeFile({fileName:'presentation_with_customers.pptx'});
-      showToast('تم إنشاء العرض بنجاح ✅');
+    // تغيير حجم الصورة
+    function resizeDataUrl(dataUrl, maxWidth, quality = 0.85) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const ratio = img.width / img.height;
+          const width = Math.min(maxWidth, img.width);
+          const height = Math.round(width / ratio);
+          
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => reject(new Error('فشل تحميل الصورة'));
+        img.src = dataUrl;
+      });
+    }
+
+    // إضافة حدث لاختيار الملف
+    hiddenInput.addEventListener('change', async e => {
+      const file = e.target.files && e.target.files[0];
+      await handleSelectedFile(file);
     });
+
+    // عرض قائمة السلايدات
+    function renderSlides() {
+      slidesListEl.innerHTML = '';
+      slides.forEach((slide, index) => {
+        const thumb = document.createElement('div');
+        thumb.className = 'slide-thumb' + (index === currentIndex ? ' active' : '');
+        thumb.textContent = `سلايد ${index + 1}`;
+        thumb.addEventListener('click', () => {
+          currentIndex = index;
+          renderCurrentSlide();
+        });
+        slidesListEl.appendChild(thumb);
+      });
+    }
+
+    // عرض السلايد الحالي
+    function renderCurrentSlide() {
+      placeholdersEl.innerHTML = '';
+      slides[currentIndex].forEach((data, index) => {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'ph';
+        
+        if (data) {
+          const img = document.createElement('img');
+          img.src = data;
+          placeholder.appendChild(img);
+        } else {
+          const label = document.createElement('div');
+          label.className = 'label';
+          label.textContent = 'اضغط لاختيار صورة';
+          placeholder.appendChild(label);
+        }
+        
+        placeholder.addEventListener('click', () => openImagePicker(index));
+        placeholdersEl.appendChild(placeholder);
+      });
+      
+      renderSlides();
+    }
+
+    // أحداث الأزرار
+    document.getElementById('addSlideBtn').addEventListener('click', () => {
+      slides.push([null, null, null]);
+      currentIndex = slides.length - 1;
+      renderCurrentSlide();
+      showToast('تم إضافة سلايد جديد', 'success');
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      if (confirm('هل تريد حذف كل السلايدات؟')) {
+        slides = [[null, null, null]];
+        currentIndex = 0;
+        renderCurrentSlide();
+        showToast('تم حذف جميع السلايدات', 'success');
+      }
+    });
+
+    // تصدير العرض التقديمي
+    document.getElementById('exportBtn').addEventListener('click', async () => {
+      // التحقق من وجود صور
+      const hasImages = slides.some(slide => slide.some(img => img !== null));
+      if (!hasImages) {
+        showToast('يرجى إضافة صورة واحدة على الأقل', 'error');
+        return;
+      }
+
+      try {
+        showToast('جاري إنشاء العرض التقديمي...', 'info');
+        
+        const pptx = new PptxGenJS();
+        pptx.layout = 'LAYOUT_WIDE';
+        
+        const merch = document.getElementById('merchCode').value || 'غير محدد';
+        const acc = document.getElementById('accCode').value || 'غير محدد';
+        const name = document.getElementById('custName').value || 'غير محدد';
+        const addr = document.getElementById('custAddress').value || 'غير محدد';
+        const type = document.getElementById('custType').value || 'غير محدد';
+        const gov = document.getElementById('custGov').value || 'غير محدد';
+        const notes = document.getElementById('notes').value || 'لا توجد ملاحظات';
+
+        // إضافة كل سلايد
+        slides.forEach((slide, index) => {
+          const slideObj = pptx.addSlide();
+          
+          // عرض الصور
+          const imgWidth = (13.33 - (0.6 * 2) - 0.3 * 2) / 3;
+          const imgHeight = 4.5;
+          
+          slide.forEach((data, j) => {
+            const x = 0.6 + j * (imgWidth + 0.15);
+            const y = 1.0;
+            
+            if (data) {
+              slideObj.addImage({
+                data: data,
+                x: x,
+                y: y,
+                w: imgWidth,
+                h: imgHeight
+              });
+            } else {
+              // إضافة مربع فارغ إذا لم توجد صورة
+              slideObj.addShape(pptx.ShapeType.rect, {
+                x: x,
+                y: y,
+                w: imgWidth,
+                h: imgHeight,
+                fill: { color: 'F7F7F7' },
+                line: { color: 'CCCCCC' }
+              });
+              
+              // إضافة نص للمربع الفارغ
+              slideObj.addText('لا توجد صورة', {
+                x: x,
+                y: y + imgHeight / 2 - 0.2,
+                w: imgWidth,
+                h: 0.4,
+                align: 'center',
+                fontSize: 10,
+                color: '888888'
+              });
+            }
+          });
+          
+          // إضافة جدول البيانات
+          const rows = [
+            [
+              { text: 'Merch Code', options: { bold: true } },
+              { text: 'Acc-Code', options: { bold: true } },
+              { text: 'Customer Name', options: { bold: true } },
+              { text: 'Customer Address', options: { bold: true } },
+              { text: 'Customer Type', options: { bold: true } },
+              { text: 'Gov.', options: { bold: true } },
+              { text: 'Notes', options: { bold: true } }
+            ],
+            [merch, acc, name, addr, type, gov, notes]
+          ];
+          
+          slideObj.addTable(rows, {
+            x: 0.3,
+            y: 6,
+            w: 12.5,
+            fontSize: 10,
+            border: { pt: 1, color: '999999' },
+            fill: { color: 'F9F9F9' }
+          });
+          
+          // إضافة عنوان للسلايد
+          slideObj.addText(`سلايد ${index + 1}`, {
+            x: 0.3,
+            y: 0.2,
+            w: 12.5,
+            h: 0.5,
+            fontSize: 14,
+            bold: true,
+            align: 'center'
+          });
+        });
+
+        // حفظ الملف
+        await pptx.writeFile({ fileName: `presentation_${merch || 'unknown'}.pptx` });
+        showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
+      } catch (error) {
+        console.error(error);
+        showToast('فشل في إنشاء العرض التقديمي', 'error');
+      }
+    });
+
+    // التهيئة الأولية
+    renderCurrentSlide();
   </script>
 </body>
 </html>
