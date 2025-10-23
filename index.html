@@ -1,392 +1,229 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<!doctype html>
+<html lang="ar">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>مصمم برزنتيشن — بيانات العملاء (مُحدّث)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>مصمم برزنتيشن مع بيانات العملاء</title>
+  <script src="https://unpkg.com/pptxgenjs@3.9.0/dist/pptxgen.bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
-    body { font-family: "Cairo", sans-serif; background: #f7f7f7; text-align: center; padding: 18px; color:#222 }
-    h2 { margin-bottom: 12px; }
-    input, textarea, select { width: 90%; padding: 8px; margin: 6px 0; border-radius: 6px; border: 1px solid #ccc; text-align: center; }
-    button { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; margin: 8px; }
-    #exportButton { background: #007bff; color: white; }
-    #testFetch { background: #28a745; color: white; }
-    #imageContainer { margin-top: 8px; }
-    .image-box { display:inline-block; width:250px; height:150px; border:2px dashed #ccc; border-radius:12px; margin:8px; vertical-align:top; background:#eef3ff; overflow:hidden; cursor:pointer; position:relative; }
-    .image-box span { display:block; line-height:150px; color:#555; }
-    .image-box img{ width:100%; height:100%; object-fit:cover; border-radius:12px; display:block;}
-    .status { margin-top:8px; font-size:14px; color:#444; }
-    .modal { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.35); }
-    .modal .card { background:white; padding:16px; border-radius:10px; width:320px; text-align:center; }
-    .small { font-size:13px; color:#666; }
-    .disabled { opacity:0.6; pointer-events:none; }
+    :root{--bg:#f7f7f8;--card:#fff;--accent:#0b71eb;--muted:#666}
+    html,body{height:100%;margin:0;font-family:Tahoma, Arial, sans-serif;background:var(--bg);color:#111}
+    .app{max-width:980px;margin:12px auto;padding:14px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    h1{font-size:18px;margin:0}
+    .controls{display:flex;gap:8px}
+    button{background:var(--accent);color:#fff;border:none;padding:10px 12px;border-radius:8px;font-weight:600;cursor:pointer}
+    button.ghost{background:transparent;color:var(--accent);border:1px solid rgba(11,113,235,.15)}
+    main{margin-top:12px}
+    .slide-area{background:var(--card);padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(10,10,10,.04)}
+    .placeholders{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .ph{position:relative;padding-top:56.25%;background:linear-gradient(180deg,#eef2ff,#fff);border-radius:8px;border:2px dashed rgba(0,0,0,.06);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}
+    .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .ph .label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;padding:4px}
+    .small{font-size:13px;color:var(--muted);margin-top:10px}
+    input[type="text"]{padding:8px;border-radius:6px;border:1px solid #ccc;font-size:14px;width:100%}
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:10px;margin-bottom:10px}
   </style>
 </head>
-<body>
+<body dir="rtl">
+  <div class="app">
+    <header>
+      <h1>مصمم برزنتيشن — بيانات العملاء</h1>
+      <div class="controls">
+        <button id="addSlideBtn">➕ إضافة سلايد</button>
+        <button id="exportBtn">📤 تصدير العرض</button>
+      </div>
+    </header>
 
-  <h2>مصمم برزنتيشن — بيانات العملاء (محدّث)</h2>
+    <section class="form-grid">
+      <div><label>Merch Code</label><input type="text" id="merchCode"></div>
+      <div><label>Acc-Code</label><input type="text" id="accCode" readonly></div>
+      <div><label>Customer Name</label><input type="text" id="custName" readonly></div>
+      <div><label>Address</label><input type="text" id="custAddress" readonly></div>
+      <div><label>Customer Type</label><input type="text" id="custType" readonly></div>
+      <div><label>Gov.</label><input type="text" id="custGov" readonly></div>
+      <div><label>Notes</label><input type="text" id="notes"></div>
+    </section>
 
-  <div>
-    <button id="addSlide">➕ إضافة سلايد (مستقبلي)</button>
-    <button id="exportButton">🧾 تصدير العرض</button>
+    <main>
+      <section class="slide-area">
+        <div class="placeholders" id="placeholders"></div>
+        <div class="small">اضغط على أي مربع لاختيار صورة من الكاميرا أو المعرض.</div>
+      </section>
+      <section class="small">قائمة السلايدات:</section>
+      <div class="slides-list" id="slidesList"></div>
+      <input type="file" id="hiddenFileInput" accept="image/*" style="display:none" />
+    </main>
+
+    <footer>
+      <div class="small">الصور سيتم ضغطها إلى 600px لتقليل الحجم.</div>
+      <div class="right"><button id="clearBtn" class="ghost">🗑️ تفريغ السلايدات</button></div>
+    </footer>
   </div>
 
-  <div style="margin-top:10px">
-    <label>Merch Code</label><br>
-    <input type="text" id="merchCode" placeholder="أدخل الكود ثم اضغط Enter أو اختبر" autocomplete="off">
-  </div>
-
-  <div>
-    <label>Acc-Code</label><br>
-    <input type="text" id="accCode" readonly>
-  </div>
-
-  <div>
-    <label>Customer Name</label><br>
-    <input type="text" id="customerName" readonly>
-  </div>
-
-  <div>
-    <label>Address</label><br>
-    <input type="text" id="address" readonly>
-  </div>
-
-  <div>
-    <label>Customer Type</label><br>
-    <input type="text" id="customerType" readonly>
-  </div>
-
-  <div>
-    <label>Gov.</label><br>
-    <input type="text" id="gov" readonly>
-  </div>
-
-  <div>
-    <label>Notes</label><br>
-    <textarea id="notes" rows="2"></textarea>
-  </div>
-
-  <div id="imageContainer">
-    <div class="image-box" data-index="0"><span>اضغط لاختيار صورة</span></div>
-    <div class="image-box" data-index="1"><span>اضغط لاختيار صورة</span></div>
-    <div class="image-box" data-index="2"><span>اضغط لاختيار صورة</span></div>
-  </div>
-
-  <p class="status" id="status">جاهز.</p>
-
-  <!-- Modal لاختيار كاميرا او معرض -->
-  <div id="chooserModal" style="display:none" class="modal">
-    <div class="card">
-      <h3>اختر مصدر الصورة</h3>
-      <button id="useCamera" style="background:#007bff;color:#fff;padding:8px 12px;border-radius:6px;margin:6px">التقاط صورة (كاميرا)</button>
-      <button id="useGallery" style="background:#6c757d;color:#fff;padding:8px 12px;border-radius:6px;margin:6px">اختيار من المعرض</button>
-      <div style="margin-top:8px"><button id="closeChooser">إلغاء</button></div>
-    </div>
-  </div>
-
-  <!-- مكتبة PPTXGenJS -->
-  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.9.0/dist/pptxgen.min.js"></script>
+  <div class="toast" id="toast" style="display:none;position:fixed;bottom:20px;right:20px;background:#0b71eb;color:#fff;padding:10px 14px;border-radius:8px;font-size:14px;"></div>
 
   <script>
-    // ---------- عناصر واجهة المستخدم ----------
-    const sheetIdInput = document.getElementById('sheetId');
-    const testFetchBtn = document.getElementById('testFetch');
-    const merchInput = document.getElementById('merchCode');
-    const status = document.getElementById('status');
-    const exportBtn = document.getElementById('exportButton');
+    let excelData = [];
+    let slides = [ [null,null,null] ];
+    let currentIndex = 0;
+    const MAX_WIDTH = 600;
+    const placeholdersEl = document.getElementById('placeholders');
+    const slidesListEl = document.getElementById('slidesList');
+    const hiddenInput = document.getElementById('hiddenFileInput');
+    const toast = document.getElementById('toast');
+    let pendingIdx = 0;
 
-    // Image boxes state
-    const imageBoxes = Array.from(document.querySelectorAll('.image-box'));
-    let activeBoxIndex = null; // index of box user clicked (for modal)
+    function showToast(msg, time=3000){toast.textContent=msg;toast.style.display='block';setTimeout(()=>toast.style.display='none',time);}
 
-    // Cached sheet rows after successful fetch
-    let sheetRows = null;
+    // ✅ تحميل البيانات من Google Sheets
+    const SHEET_URL = "https://docs.google.com/spreadsheets/d/1N6b3EQdXS4X8fMtHZ04tHkwKTOgNzQyuLVA-V7HZzOk/gviz/tq?tqx=out:json";
 
-    // ---------- Helpers ----------
-    function setStatus(msg, isError = false) {
-      status.textContent = msg;
-      status.style.color = isError ? 'crimson' : '#222';
-      console.log('[STATUS]', msg);
-    }
-
-    function parseGvizJson(text) {
-      // gviz JSON wrapper: "/*O_o*/\ngoogle.visualization.Query.setResponse(...)"
+    async function loadSheetData() {
       try {
+        const res = await fetch(SHEET_URL);
+        const text = await res.text();
         const json = JSON.parse(text.substr(47).slice(0, -2));
-        return json.table.rows;
-      } catch (err) {
-        console.error('GVIZ parse error', err);
-        throw new Error('تعذر تحليل ناتج الـ Google Sheets (GVIZ). تأكد أن الـ Sheet منشور أو مُشارك.');
-      }
-    }
 
-    // ---------- الحصول على الشيت ----------
-    async function fetchSheet(sheetId) {
-      if (!sheetId) throw new Error('ادخل Sheet ID أولاً.');
-      // GVIZ endpoint (works if sheet is viewable for anyone)
-      const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
-      setStatus('جاري جلب بيانات الشيت...');
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('خطأ في جلب الشيت. تحقق من الـ ID وصلاحيات المشاركة.');
-      const text = await res.text();
-      const rows = parseGvizJson(text);
-      setStatus('تم جلب الشيت (' + rows.length + ' صف).');
-      return rows;
-    }
+        excelData = json.table.rows.map(r => ({
+          "Merch Code": String(r.c[0]?.v ?? ''),
+          "Acc-Code": String(r.c[1]?.v ?? ''),
+          "Customer Name": String(r.c[2]?.v ?? ''),
+          "Customer Address": String(r.c[3]?.v ?? ''),
+          "Customer Type": String(r.c[4]?.v ?? ''),
+          "Gov.": String(r.c[5]?.v ?? ''),
+          "Notes": String(r.c[6]?.v ?? '')
+        }));
 
-    // تحويل صفوف الشيت إلى هيكل أبسط (كل صف كمصفوفة قيم)
-    function normalizeRows(rows) {
-      return rows.map(r => (r.c || []).map(cell => (cell ? cell.v : '')));
-    }
-
-    // البحث عن merch code
-    function findByMerch(code) {
-      if (!sheetRows) return null;
-      const normalized = normalizeRows(sheetRows);
-      // نفترض العمود الأول هو Merch Code، والثاني accCode، الثالث customerName, الرابع address, الخامس customerType, السادس gov
-      for (let r of normalized) {
-        if (r[0] != null && String(r[0]).trim() === String(code).trim()) {
-          return {
-            accCode: r[1] || '',
-            customerName: r[2] || '',
-            address: r[3] || '',
-            customerType: r[4] || '',
-            gov: r[5] || ''
-          };
-        }
-      }
-      return null;
-    }
-
-    // ---------- زر اختبار جلب الشيت ----------
-    testFetchBtn.addEventListener('click', async () => {
-      try {
-        sheetRows = null;
-        const id = sheetIdInput.value.trim();
-        if (!id) { setStatus('ادخل Sheet ID في الحقل أعلاه.', true); return; }
-        sheetRows = await fetchSheet(id);
+        showToast('تم تحميل بيانات Google Sheet بنجاح ✅');
       } catch (err) {
         console.error(err);
-        setStatus(err.message || 'فشل جلب الشيت.', true);
-      }
-    });
-
-    // عندما يضغط المستخدم Enter في خانة Merch Code -> نبحث
-    merchInput.addEventListener('keydown', async (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        await lookupMerch();
-      }
-    });
-
-    async function lookupMerch() {
-      const code = merchInput.value.trim();
-      if (!code) { setStatus('أدخل Merch Code ثم اضغط Enter.', true); return; }
-      try {
-        // لو sheetRows مش موجود نحاول جلبه تلقائيًا (لو المستخدم وضع ID)
-        if (!sheetRows) {
-          const id = sheetIdInput.value.trim();
-          if (!id) { setStatus('ادخل Sheet ID أولاً أو اضغط اختبار جلب الشيت.', true); return; }
-          sheetRows = await fetchSheet(id);
-        }
-        const found = findByMerch(code);
-        if (!found) {
-          setStatus('لم يتم العثور على الكود في الشيت.', true);
-          // مسح الحقول
-          document.getElementById('accCode').value = '';
-          document.getElementById('customerName').value = '';
-          document.getElementById('address').value = '';
-          document.getElementById('customerType').value = '';
-          document.getElementById('gov').value = '';
-          return;
-        }
-        // عَبّي الحقول
-        document.getElementById('accCode').value = found.accCode;
-        document.getElementById('customerName').value = found.customerName;
-        document.getElementById('address').value = found.address;
-        document.getElementById('customerType').value = found.customerType;
-        document.getElementById('gov').value = found.gov;
-        setStatus('تم ملء البيانات من الشيت.');
-        saveData();
-      } catch (err) {
-        console.error(err);
-        setStatus(err.message || 'خطأ أثناء البحث عن الكود.', true);
+        showToast('فشل تحميل بيانات Google Sheet ❌');
       }
     }
+    loadSheetData();
 
-    // ---------- اختيار الصور: عرض مودال ليختار كاميرا أو معرض ----------
-    const chooserModal = document.getElementById('chooserModal');
-    const useCameraBtn = document.getElementById('useCamera');
-    const useGalleryBtn = document.getElementById('useGallery');
-    const closeChooser = document.getElementById('closeChooser');
+    // 🧠 تعبئة البيانات عند كتابة Merch Code
+  document.getElementById('merchCode').addEventListener('input', ()=>{
+  const code = document.getElementById('merchCode').value.trim();
 
-    imageBoxes.forEach(box => {
-      box.addEventListener('click', (e) => {
-        activeBoxIndex = parseInt(box.getAttribute('data-index'), 10);
-        // عرض المودال للاختيار
-        chooserModal.style.display = 'flex';
-      });
-    });
+  // نحاول نعمل مطابقة مرنة بغض النظر عن الأصفار أو النوع
+  const match = excelData.find(r => {
+    const sheetCode = String(r['Merch Code'] || '').trim();
+    return sheetCode === code || sheetCode.replace(/^0+/, '') === code.replace(/^0+/, '');
+  });
 
-    closeChooser.addEventListener('click', () => {
-      chooserModal.style.display = 'none';
-      activeBoxIndex = null;
-    });
+  if(match){
+    document.getElementById('accCode').value = match['Acc-Code'] || '';
+    document.getElementById('custName').value = match['Customer Name'] || '';
+    document.getElementById('custAddress').value = match['Customer Address'] || '';
+    document.getElementById('custType').value = match['Customer Type'] || '';
+    document.getElementById('custGov').value = match['Gov.'] || '';
+    document.getElementById('notes').value = match['Notes'] || '';
+  } else {
+    document.querySelectorAll('#accCode,#custName,#custAddress,#custType,#custGov,#notes').forEach(el=>el.value='');
+  }
+});
 
-    // دالة لفتح input حسب النوع
-    function openFileInput({ useCamera = false }) {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/*';
-      // لو اخترنا كاميرا نضع capture (هذا سيطلب الكاميرا بقوة) — هنا المستخدم اختار الكاميرا بنفسه
-      if (useCamera) {
-        input.setAttribute('capture', 'environment'); // أو 'user' للكاميرا الأمامية
-      } else {
-        input.removeAttribute('capture');
-      }
+    // 📸 اختيار الصورة (كاميرا أو معرض)
+    function openImagePicker(idx){
+      pendingIdx = idx;
+      const overlay = document.createElement('div');
+      overlay.style.position='fixed';
+      overlay.style.inset=0;
+      overlay.style.background='rgba(0,0,0,0.5)';
+      overlay.style.display='flex';
+      overlay.style.alignItems='center';
+      overlay.style.justifyContent='center';
+      overlay.style.zIndex='9999';
+      overlay.innerHTML = `
+        <div style="background:#fff;padding:20px;border-radius:12px;text-align:center;min-width:240px;">
+          <h3 style="margin-bottom:10px;">اختر المصدر</h3>
+          <button id="camBtn" style="background:#0b71eb;color:#fff;border:none;padding:10px 14px;border-radius:8px;margin:6px;">📷 الكاميرا</button>
+          <button id="galleryBtn" style="background:#2c8a2c;color:#fff;border:none;padding:10px 14px;border-radius:8px;margin:6px;">🖼️ المعرض</button>
+        </div>`;
+      document.body.appendChild(overlay);
 
-      input.onchange = (ev) => {
-        const file = ev.target.files && ev.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (r) => {
-          const src = r.target.result;
-          const box = imageBoxes[activeBoxIndex];
-          if (box) box.innerHTML = `<img src="${src}" alt="صورة العميل">`;
-          saveData();
-        };
-        reader.readAsDataURL(file);
-      };
-
-      // تفعيل النقر
-      input.click();
-    }
-
-    useCameraBtn.addEventListener('click', () => {
-      chooserModal.style.display = 'none';
-      if (activeBoxIndex === null) return;
-      openFileInput({ useCamera: true });
-      activeBoxIndex = null;
-    });
-
-    useGalleryBtn.addEventListener('click', () => {
-      chooserModal.style.display = 'none';
-      if (activeBoxIndex === null) return;
-      openFileInput({ useCamera: false });
-      activeBoxIndex = null;
-    });
-
-    // ---------- الحفظ التلقائي واسترجاع ----------
-    const fields = ["merchCode", "accCode", "customerName", "address", "customerType", "gov", "notes"];
-    function saveData() {
-      try {
-        const data = {};
-        fields.forEach(id => data[id] = document.getElementById(id).value);
-        const images = [];
-        document.querySelectorAll('.image-box img').forEach(img => images.push(img.src));
-        data.images = images;
-        localStorage.setItem('presentationData_v2', JSON.stringify(data));
-        setStatus('تم حفظ البيانات محليًا.');
-      } catch (err) {
-        console.error('save error', err);
-      }
-    }
-
-    function loadData() {
-      const saved = localStorage.getItem('presentationData_v2');
-      if (!saved) return;
-      try {
-        const data = JSON.parse(saved);
-        fields.forEach(id => { if (data[id]) document.getElementById(id).value = data[id]; });
-        if (data.images && Array.isArray(data.images)) {
-          data.images.forEach((src,i) => {
-            const box = imageBoxes[i];
-            if (box && src) box.innerHTML = `<img src="${src}" alt="صورة العميل">`;
-          });
-        }
-        setStatus('تم تحميل البيانات المحلية.');
-      } catch (err) { console.error('load error', err); }
-    }
-
-    window.addEventListener('load', loadData);
-    fields.forEach(id => document.getElementById(id).addEventListener('input', saveData));
-
-    // ---------- تصدير العرض (pptx) ----------
-    exportBtn.addEventListener('click', async () => {
-      try {
-        exportBtn.classList.add('disabled');
-        exportBtn.textContent = 'جاري التصدير...';
-        setStatus('يتم تحضير العرض للتصدير...');
-
-        const merchCode = document.getElementById('merchCode').value || '';
-        const accCode = document.getElementById('accCode').value || '';
-        const customerName = document.getElementById('customerName').value || '';
-        const address = document.getElementById('address').value || '';
-        const customerType = document.getElementById('customerType').value || '';
-        const gov = document.getElementById('gov').value || '';
-        const notes = document.getElementById('notes').value || '';
-
-        if (!merchCode && !customerName) {
-          setStatus('من فضلك أدخل بيانات العميل قبل التصدير.', true);
-          exportBtn.classList.remove('disabled');
-          exportBtn.textContent = '🧾 تصدير العرض';
-          return;
-        }
-
-        const pptx = new PptxGenJS();
-        pptx.layout = 'LAYOUT_WIDE'; // 16x9
-
-        // سلايد المعلومات
-        const slide = pptx.addSlide();
-        slide.addText('بيانات العميل', { x:1, y:0.4, fontSize:28, bold:true, color:'003366' });
-
-        const info = [
-          `Merch Code: ${merchCode}`,
-          `Acc-Code: ${accCode}`,
-          `Customer Name: ${customerName}`,
-          `Address: ${address}`,
-          `Customer Type: ${customerType}`,
-          `Gov: ${gov}`,
-          `Notes: ${notes}`
-        ];
-
-        let y = 1.2;
-        info.forEach(line => {
-          slide.addText(line, { x:1, y, fontSize:16, color:'000000' });
-          y += 0.5;
+      // الكاميرا
+      overlay.querySelector('#camBtn').addEventListener('click', ()=>{
+        document.body.removeChild(overlay);
+        const camInput=document.createElement('input');
+        camInput.type='file';
+        camInput.accept='image/*;capture=camera';
+        camInput.style.display='none';
+        camInput.addEventListener('change',async e=>{
+          const file=e.target.files&&e.target.files[0];
+          if(file) await handleSelectedFile(file);
         });
+        document.body.appendChild(camInput);
+        camInput.click();
+        camInput.addEventListener('blur',()=>setTimeout(()=>camInput.remove(),500));
+      });
 
-        // إضافة الصور كل واحدة في سلايد منفصل
-        const imgs = Array.from(document.querySelectorAll('.image-box img')).map(i=>i.src).filter(Boolean);
-        for (let i=0;i<imgs.length;i++) {
-          const s = pptx.addSlide();
-          // حجم الصورة تقريبي، PPTXGen يتقبل dataURL
-          s.addImage({ data: imgs[i], x:0.4, y:0.4, w:9, h:5 });
-          s.addText(`صورة ${i+1}`, { x:4, y:5.6, fontSize:14, color:'444444' });
-        }
+      // المعرض
+      overlay.querySelector('#galleryBtn').addEventListener('click', ()=>{
+        document.body.removeChild(overlay);
+        hiddenInput.value='';
+        hiddenInput.click();
+      });
 
-        // حفظ الملف (await لضمان انتهاء العملية)
-        const filename = `presentation_${merchCode || 'client'}.pptx`;
-        await pptx.writeFile({ fileName: filename });
-        setStatus('✅ تم تصدير العرض: ' + filename);
-      } catch (err) {
-        console.error('export error', err);
-        setStatus('حدث خطأ أثناء التصدير. افتح الكونسول لمزيد من التفاصيل.', true);
-        alert('خطأ في التصدير — تأكد من وجود صور صالحة أو افتح الكونسول.');
-      } finally {
-        exportBtn.classList.remove('disabled');
-        exportBtn.textContent = '🧾 تصدير العرض';
-      }
+      // إغلاق النافذة عند الضغط بالخارج
+      overlay.addEventListener('click', e=>{
+        if(e.target===overlay) document.body.removeChild(overlay);
+      });
+    }
+
+    async function handleSelectedFile(file){
+      if(!file) return;
+      showToast('جاري معالجة الصورة...');
+      const dataUrl = await fileToDataURL(file);
+      const resized = await resizeDataUrl(dataUrl, MAX_WIDTH, 0.8);
+      slides[currentIndex][pendingIdx] = resized;
+      renderCurrentSlide();
+      showToast('تم إضافة الصورة ✅');
+    }
+
+    function fileToDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});}
+    function resizeDataUrl(dataUrl,maxWidth,quality=0.85){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const ratio=img.width/img.height;const w=Math.min(maxWidth,img.width);const h=Math.round(w/ratio);const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',quality));};img.onerror=()=>rej(new Error('Image load error'));img.src=dataUrl;});}
+    hiddenInput.addEventListener('change',async e=>{const f=e.target.files&&e.target.files[0];await handleSelectedFile(f);});
+
+    function renderSlides(){slidesListEl.innerHTML='';slides.forEach((s,i)=>{const thumb=document.createElement('div');thumb.className='slide-thumb';thumb.textContent='سلايد '+(i+1);thumb.addEventListener('click',()=>{currentIndex=i;renderCurrentSlide();});slidesListEl.appendChild(thumb);});}
+    function renderCurrentSlide(){placeholdersEl.innerHTML='';slides[currentIndex].forEach((d,idx)=>{const ph=document.createElement('div');ph.className='ph';if(d){const img=document.createElement('img');img.src=d;ph.appendChild(img);}else{const l=document.createElement('div');l.className='label';l.textContent='اضغط لاختيار صورة';ph.appendChild(l);}ph.addEventListener('click',()=>openImagePicker(idx));placeholdersEl.appendChild(ph);});renderSlides();}
+    renderCurrentSlide();
+
+    document.getElementById('addSlideBtn').addEventListener('click',()=>{slides.push([null,null,null]);currentIndex=slides.length-1;renderCurrentSlide();});
+    document.getElementById('clearBtn').addEventListener('click',()=>{if(confirm('هل تريد حذف كل السلايدات؟')){slides=[ [null,null,null] ];currentIndex=0;renderCurrentSlide();}});
+
+    // 🎞️ تصدير العرض
+    document.getElementById('exportBtn').addEventListener('click', async ()=>{
+      const pptx = new PptxGenJS(); pptx.layout='LAYOUT_WIDE';
+      const merch = document.getElementById('merchCode').value;
+      const acc = document.getElementById('accCode').value;
+      const name = document.getElementById('custName').value;
+      const addr = document.getElementById('custAddress').value;
+      const type = document.getElementById('custType').value;
+      const gov = document.getElementById('custGov').value;
+      const notes = document.getElementById('notes').value;
+
+      slides.forEach(s=>{
+        const slide = pptx.addSlide();
+        const imgW=(13.33-(0.6*2)-0.3*2)/3;const imgH=4.5;
+        s.forEach((data,j)=>{
+          const x=0.6+j*(imgW+0.15);const y=1.0;
+          if(data) slide.addImage({data,x,y,w:imgW,h:imgH});
+          else {slide.addShape(pptx.ShapeType.rect,{x,y,w:imgW,h:imgH,fill:{color:'F7F7F7'},line:{color:'CCC'}});}
+        });
+        const rows=[
+          [{text:'Merch Code',bold:true},{text:'Acc-Code',bold:true},{text:'Customer Name',bold:true},{text:'Customer Address',bold:true},{text:'Customer Type',bold:true},{text:'Gov.',bold:true},{text:'Notes',bold:true}],
+          [merch,acc,name,addr,type,gov,notes]
+        ];
+        slide.addTable(rows,{x:0.3,y:6,w:12.5,fontSize:13,border:{pt:1,color:'999'},fill:{color:'F9F9F9'}});
+      });
+
+      await pptx.writeFile({fileName:'presentation_with_customers.pptx'});
+      showToast('تم إنشاء العرض بنجاح ✅');
     });
-
-    // زر إضافة سلايد (محلّي — مجرد مثال توسيعي مستقبلي)
-    document.getElementById('addSlide').addEventListener('click', () => {
-      alert('ميزة إضافة سلايد منفصل سيتم تنفيذها لو حبيت. دلوقتي التصدير ينشئ سلايد بيانات + سلايد لكل صورة.');
-    });
-
-    // شغّل البحث لو المستخدم كتب كود وغادر الخانة
-    merchInput.addEventListener('blur', () => { /* احفظ تلقائيًا فقط */ saveData(); });
-
   </script>
 </body>
 </html>
