@@ -1,192 +1,351 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>مصمم برزنتيشن — بيانات العملاء</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>مصمم برزنتيشن — بيانات العملاء (مُحدّث)</title>
   <style>
-    body { font-family: "Cairo", sans-serif; background: #f7f7f7; text-align: center; padding: 20px; }
-    h2 { color: #222; margin-bottom: 20px; }
-    input, textarea {
-      width: 90%; padding: 8px; margin: 5px; border-radius: 6px; border: 1px solid #ccc; text-align: center;
-    }
-    button {
-      padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; margin: 10px;
-    }
-    #addSlide, #exportButton { background: #007bff; color: white; }
-    .image-box {
-      display: inline-block; width: 250px; height: 150px; border: 2px dashed #ccc;
-      border-radius: 12px; margin: 10px; vertical-align: top; background: #eef3ff; overflow: hidden;
-      cursor: pointer; color: #555; line-height: 150px;
-    }
-    .image-box img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+    body { font-family: "Cairo", sans-serif; background: #f7f7f7; text-align: center; padding: 18px; color:#222 }
+    h2 { margin-bottom: 12px; }
+    input, textarea, select { width: 90%; padding: 8px; margin: 6px 0; border-radius: 6px; border: 1px solid #ccc; text-align: center; }
+    button { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; margin: 8px; }
+    #exportButton { background: #007bff; color: white; }
+    #testFetch { background: #28a745; color: white; }
+    #imageContainer { margin-top: 8px; }
+    .image-box { display:inline-block; width:250px; height:150px; border:2px dashed #ccc; border-radius:12px; margin:8px; vertical-align:top; background:#eef3ff; overflow:hidden; cursor:pointer; position:relative; }
+    .image-box span { display:block; line-height:150px; color:#555; }
+    .image-box img{ width:100%; height:100%; object-fit:cover; border-radius:12px; display:block;}
+    .status { margin-top:8px; font-size:14px; color:#444; }
+    .modal { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.35); }
+    .modal .card { background:white; padding:16px; border-radius:10px; width:320px; text-align:center; }
+    .small { font-size:13px; color:#666; }
+    .disabled { opacity:0.6; pointer-events:none; }
   </style>
 </head>
 <body>
 
-  <h2>مصمم برزنتيشن — بيانات العملاء</h2>
-
-  <button id="addSlide">➕ إضافة سلايد</button>
-  <button id="exportButton">🧾 تصدير العرض</button>
+  <h2>مصمم برزنتيشن — بيانات العملاء (محدّث)</h2>
 
   <div>
-    <label>Merch Code</label><br>
-    <input type="text" id="merchCode" placeholder="أدخل الكود">
+    <button id="addSlide">➕ إضافة سلايد (مستقبلي)</button>
+    <button id="exportButton">🧾 تصدير العرض</button>
   </div>
+
+  <div>
+    <label>معرّف الـ Google Sheet (Sheet ID)</label><br>
+    <input id="sheetId" placeholder="انسخ الـ ID من رابط الشيت: /d/THIS_IS_ID/" />
+    <div class="small">ملاحظة: لازم الشيت مُشارك للعامة أو منشور (Publish to web).</div>
+    <button id="testFetch">🔍 اختبار جلب بيانات الشيت</button>
+  </div>
+
+  <div style="margin-top:10px">
+    <label>Merch Code</label><br>
+    <input type="text" id="merchCode" placeholder="أدخل الكود ثم اضغط Enter أو اختبر" autocomplete="off">
+  </div>
+
   <div>
     <label>Acc-Code</label><br>
     <input type="text" id="accCode" readonly>
   </div>
+
   <div>
     <label>Customer Name</label><br>
     <input type="text" id="customerName" readonly>
   </div>
+
   <div>
     <label>Address</label><br>
     <input type="text" id="address" readonly>
   </div>
+
   <div>
     <label>Customer Type</label><br>
     <input type="text" id="customerType" readonly>
   </div>
+
   <div>
     <label>Gov.</label><br>
     <input type="text" id="gov" readonly>
   </div>
+
   <div>
     <label>Notes</label><br>
     <textarea id="notes" rows="2"></textarea>
   </div>
 
   <div id="imageContainer">
-    <div class="image-box"><span>اضغط لاختيار صورة</span></div>
-    <div class="image-box"><span>اضغط لاختيار صورة</span></div>
-    <div class="image-box"><span>اضغط لاختيار صورة</span></div>
+    <div class="image-box" data-index="0"><span>اضغط لاختيار صورة</span></div>
+    <div class="image-box" data-index="1"><span>اضغط لاختيار صورة</span></div>
+    <div class="image-box" data-index="2"><span>اضغط لاختيار صورة</span></div>
   </div>
 
-  <p>اضغط على أي مربع لاختيار صورة من الكاميرا أو المعرض.</p>
+  <p class="status" id="status">جاهز.</p>
 
-  <hr>
-  <p>Google Sheet بيانات</p>
+  <!-- Modal لاختيار كاميرا او معرض -->
+  <div id="chooserModal" style="display:none" class="modal">
+    <div class="card">
+      <h3>اختر مصدر الصورة</h3>
+      <button id="useCamera" style="background:#007bff;color:#fff;padding:8px 12px;border-radius:6px;margin:6px">التقاط صورة (كاميرا)</button>
+      <button id="useGallery" style="background:#6c757d;color:#fff;padding:8px 12px;border-radius:6px;margin:6px">اختيار من المعرض</button>
+      <div style="margin-top:8px"><button id="closeChooser">إلغاء</button></div>
+    </div>
+  </div>
 
-  <!-- 🔹 ربط Google Sheets -->
+  <!-- مكتبة PPTXGenJS -->
+  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.9.0/dist/pptxgen.min.js"></script>
+
   <script>
-    const sheetURL = "https://docs.google.com/spreadsheets/d/1N6b3EQdXS4X8fMtHZ04tHkwKTOgNzQyuLVA-V7HZzOk/gviz/tq?tqx=out:json";
+    // ---------- عناصر واجهة المستخدم ----------
+    const sheetIdInput = document.getElementById('sheetId');
+    const testFetchBtn = document.getElementById('testFetch');
+    const merchInput = document.getElementById('merchCode');
+    const status = document.getElementById('status');
+    const exportBtn = document.getElementById('exportButton');
 
-    document.getElementById("merchCode").addEventListener("change", async () => {
-      const code = document.getElementById("merchCode").value.trim();
-      if (!code) return;
+    // Image boxes state
+    const imageBoxes = Array.from(document.querySelectorAll('.image-box'));
+    let activeBoxIndex = null; // index of box user clicked (for modal)
 
+    // Cached sheet rows after successful fetch
+    let sheetRows = null;
+
+    // ---------- Helpers ----------
+    function setStatus(msg, isError = false) {
+      status.textContent = msg;
+      status.style.color = isError ? 'crimson' : '#222';
+      console.log('[STATUS]', msg);
+    }
+
+    function parseGvizJson(text) {
+      // gviz JSON wrapper: "/*O_o*/\ngoogle.visualization.Query.setResponse(...)"
       try {
-        const res = await fetch(sheetURL);
-        const text = await res.text();
         const json = JSON.parse(text.substr(47).slice(0, -2));
-        const rows = json.table.rows;
+        return json.table.rows;
+      } catch (err) {
+        console.error('GVIZ parse error', err);
+        throw new Error('تعذر تحليل ناتج الـ Google Sheets (GVIZ). تأكد أن الـ Sheet منشور أو مُشارك.');
+      }
+    }
 
-        let found = false;
-        for (let r of rows) {
-          if (r.c[0] && r.c[0].v == code) {
-            found = true;
-            document.getElementById("accCode").value = r.c[1]?.v || "";
-            document.getElementById("customerName").value = r.c[2]?.v || "";
-            document.getElementById("address").value = r.c[3]?.v || "";
-            document.getElementById("customerType").value = r.c[4]?.v || "";
-            document.getElementById("gov").value = r.c[5]?.v || "";
-            break;
-          }
+    // ---------- الحصول على الشيت ----------
+    async function fetchSheet(sheetId) {
+      if (!sheetId) throw new Error('ادخل Sheet ID أولاً.');
+      // GVIZ endpoint (works if sheet is viewable for anyone)
+      const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+      setStatus('جاري جلب بيانات الشيت...');
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('خطأ في جلب الشيت. تحقق من الـ ID وصلاحيات المشاركة.');
+      const text = await res.text();
+      const rows = parseGvizJson(text);
+      setStatus('تم جلب الشيت (' + rows.length + ' صف).');
+      return rows;
+    }
+
+    // تحويل صفوف الشيت إلى هيكل أبسط (كل صف كمصفوفة قيم)
+    function normalizeRows(rows) {
+      return rows.map(r => (r.c || []).map(cell => (cell ? cell.v : '')));
+    }
+
+    // البحث عن merch code
+    function findByMerch(code) {
+      if (!sheetRows) return null;
+      const normalized = normalizeRows(sheetRows);
+      // نفترض العمود الأول هو Merch Code، والثاني accCode، الثالث customerName, الرابع address, الخامس customerType, السادس gov
+      for (let r of normalized) {
+        if (r[0] != null && String(r[0]).trim() === String(code).trim()) {
+          return {
+            accCode: r[1] || '',
+            customerName: r[2] || '',
+            address: r[3] || '',
+            customerType: r[4] || '',
+            gov: r[5] || ''
+          };
         }
+      }
+      return null;
+    }
 
-        if (!found) alert("الكود غير موجود في الشيت.");
-        saveData();
-      } catch (e) {
-        console.error(e);
-        alert("حدث خطأ أثناء تحميل البيانات من الشيت.");
+    // ---------- زر اختبار جلب الشيت ----------
+    testFetchBtn.addEventListener('click', async () => {
+      try {
+        sheetRows = null;
+        const id = sheetIdInput.value.trim();
+        if (!id) { setStatus('ادخل Sheet ID في الحقل أعلاه.', true); return; }
+        sheetRows = await fetchSheet(id);
+      } catch (err) {
+        console.error(err);
+        setStatus(err.message || 'فشل جلب الشيت.', true);
       }
     });
-  </script>
 
-  <!-- 🔹 اختيار الصور (كاميرا + معرض) -->
-  <script>
-    document.querySelectorAll(".image-box").forEach((box) => {
-      box.addEventListener("click", () => {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.accept = "image/*";
-        input.removeAttribute("capture"); // ✅ يضمن ظهور الكاميرا والمعرض معًا
+    // عندما يضغط المستخدم Enter في خانة Merch Code -> نبحث
+    merchInput.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        await lookupMerch();
+      }
+    });
 
-        input.onchange = e => {
-          const file = e.target.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = ev => {
-            box.innerHTML = `<img src="${ev.target.result}" alt="صورة العميل">`;
-            saveData();
-          };
-          reader.readAsDataURL(file);
-        };
-        input.click();
+    async function lookupMerch() {
+      const code = merchInput.value.trim();
+      if (!code) { setStatus('أدخل Merch Code ثم اضغط Enter.', true); return; }
+      try {
+        // لو sheetRows مش موجود نحاول جلبه تلقائيًا (لو المستخدم وضع ID)
+        if (!sheetRows) {
+          const id = sheetIdInput.value.trim();
+          if (!id) { setStatus('ادخل Sheet ID أولاً أو اضغط اختبار جلب الشيت.', true); return; }
+          sheetRows = await fetchSheet(id);
+        }
+        const found = findByMerch(code);
+        if (!found) {
+          setStatus('لم يتم العثور على الكود في الشيت.', true);
+          // مسح الحقول
+          document.getElementById('accCode').value = '';
+          document.getElementById('customerName').value = '';
+          document.getElementById('address').value = '';
+          document.getElementById('customerType').value = '';
+          document.getElementById('gov').value = '';
+          return;
+        }
+        // عَبّي الحقول
+        document.getElementById('accCode').value = found.accCode;
+        document.getElementById('customerName').value = found.customerName;
+        document.getElementById('address').value = found.address;
+        document.getElementById('customerType').value = found.customerType;
+        document.getElementById('gov').value = found.gov;
+        setStatus('تم ملء البيانات من الشيت.');
+        saveData();
+      } catch (err) {
+        console.error(err);
+        setStatus(err.message || 'خطأ أثناء البحث عن الكود.', true);
+      }
+    }
+
+    // ---------- اختيار الصور: عرض مودال ليختار كاميرا أو معرض ----------
+    const chooserModal = document.getElementById('chooserModal');
+    const useCameraBtn = document.getElementById('useCamera');
+    const useGalleryBtn = document.getElementById('useGallery');
+    const closeChooser = document.getElementById('closeChooser');
+
+    imageBoxes.forEach(box => {
+      box.addEventListener('click', (e) => {
+        activeBoxIndex = parseInt(box.getAttribute('data-index'), 10);
+        // عرض المودال للاختيار
+        chooserModal.style.display = 'flex';
       });
     });
-  </script>
 
-  <!-- 🔹 الحفظ التلقائي -->
-  <script>
+    closeChooser.addEventListener('click', () => {
+      chooserModal.style.display = 'none';
+      activeBoxIndex = null;
+    });
+
+    // دالة لفتح input حسب النوع
+    function openFileInput({ useCamera = false }) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      // لو اخترنا كاميرا نضع capture (هذا سيطلب الكاميرا بقوة) — هنا المستخدم اختار الكاميرا بنفسه
+      if (useCamera) {
+        input.setAttribute('capture', 'environment'); // أو 'user' للكاميرا الأمامية
+      } else {
+        input.removeAttribute('capture');
+      }
+
+      input.onchange = (ev) => {
+        const file = ev.target.files && ev.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (r) => {
+          const src = r.target.result;
+          const box = imageBoxes[activeBoxIndex];
+          if (box) box.innerHTML = `<img src="${src}" alt="صورة العميل">`;
+          saveData();
+        };
+        reader.readAsDataURL(file);
+      };
+
+      // تفعيل النقر
+      input.click();
+    }
+
+    useCameraBtn.addEventListener('click', () => {
+      chooserModal.style.display = 'none';
+      if (activeBoxIndex === null) return;
+      openFileInput({ useCamera: true });
+      activeBoxIndex = null;
+    });
+
+    useGalleryBtn.addEventListener('click', () => {
+      chooserModal.style.display = 'none';
+      if (activeBoxIndex === null) return;
+      openFileInput({ useCamera: false });
+      activeBoxIndex = null;
+    });
+
+    // ---------- الحفظ التلقائي واسترجاع ----------
     const fields = ["merchCode", "accCode", "customerName", "address", "customerType", "gov", "notes"];
-
     function saveData() {
-      const data = {};
-      fields.forEach(id => data[id] = document.getElementById(id).value);
-      const images = [];
-      document.querySelectorAll(".image-box img").forEach(img => images.push(img.src));
-      data.images = images;
-      localStorage.setItem("presentationData", JSON.stringify(data));
+      try {
+        const data = {};
+        fields.forEach(id => data[id] = document.getElementById(id).value);
+        const images = [];
+        document.querySelectorAll('.image-box img').forEach(img => images.push(img.src));
+        data.images = images;
+        localStorage.setItem('presentationData_v2', JSON.stringify(data));
+        setStatus('تم حفظ البيانات محليًا.');
+      } catch (err) {
+        console.error('save error', err);
+      }
     }
 
     function loadData() {
-      const saved = localStorage.getItem("presentationData");
+      const saved = localStorage.getItem('presentationData_v2');
       if (!saved) return;
-      const data = JSON.parse(saved);
-      fields.forEach(id => {
-        if (data[id]) document.getElementById(id).value = data[id];
-      });
-      const boxes = document.querySelectorAll(".image-box");
-      if (data.images) {
-        data.images.forEach((src, i) => {
-          if (boxes[i]) boxes[i].innerHTML = `<img src="${src}" alt="صورة العميل">`;
-        });
-      }
+      try {
+        const data = JSON.parse(saved);
+        fields.forEach(id => { if (data[id]) document.getElementById(id).value = data[id]; });
+        if (data.images && Array.isArray(data.images)) {
+          data.images.forEach((src,i) => {
+            const box = imageBoxes[i];
+            if (box && src) box.innerHTML = `<img src="${src}" alt="صورة العميل">`;
+          });
+        }
+        setStatus('تم تحميل البيانات المحلية.');
+      } catch (err) { console.error('load error', err); }
     }
 
-    window.addEventListener("load", loadData);
-    fields.forEach(id => document.getElementById(id).addEventListener("input", saveData));
-  </script>
+    window.addEventListener('load', loadData);
+    fields.forEach(id => document.getElementById(id).addEventListener('input', saveData));
 
-  <!-- 🔹 مكتبة PowerPoint -->
-  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.9.0/dist/pptxgen.min.js"></script>
-
-  <!-- 🔹 تصدير العرض -->
-  <script>
-    document.getElementById("exportButton").addEventListener("click", async function () {
+    // ---------- تصدير العرض (pptx) ----------
+    exportBtn.addEventListener('click', async () => {
       try {
-        const merchCode = document.getElementById("merchCode").value || "";
-        const accCode = document.getElementById("accCode").value || "";
-        const customerName = document.getElementById("customerName").value || "";
-        const address = document.getElementById("address").value || "";
-        const customerType = document.getElementById("customerType").value || "";
-        const gov = document.getElementById("gov").value || "";
-        const notes = document.getElementById("notes").value || "";
+        exportBtn.classList.add('disabled');
+        exportBtn.textContent = 'جاري التصدير...';
+        setStatus('يتم تحضير العرض للتصدير...');
+
+        const merchCode = document.getElementById('merchCode').value || '';
+        const accCode = document.getElementById('accCode').value || '';
+        const customerName = document.getElementById('customerName').value || '';
+        const address = document.getElementById('address').value || '';
+        const customerType = document.getElementById('customerType').value || '';
+        const gov = document.getElementById('gov').value || '';
+        const notes = document.getElementById('notes').value || '';
 
         if (!merchCode && !customerName) {
-          alert("من فضلك أدخل بيانات العميل أولاً قبل التصدير.");
+          setStatus('من فضلك أدخل بيانات العميل قبل التصدير.', true);
+          exportBtn.classList.remove('disabled');
+          exportBtn.textContent = '🧾 تصدير العرض';
           return;
         }
 
         const pptx = new PptxGenJS();
-        pptx.layout = "16x9";
+        pptx.layout = 'LAYOUT_WIDE'; // 16x9
 
-        // 🔸 سلايد البيانات
+        // سلايد المعلومات
         const slide = pptx.addSlide();
-        slide.addText("بيانات العميل", { x: 1, y: 0.4, fontSize: 28, bold: true, color: "003366" });
+        slide.addText('بيانات العميل', { x:1, y:0.4, fontSize:28, bold:true, color:'003366' });
 
         const info = [
           `Merch Code: ${merchCode}`,
@@ -200,28 +359,41 @@
 
         let y = 1.2;
         info.forEach(line => {
-          slide.addText(line, { x: 1, y, fontSize: 16, color: "000000" });
+          slide.addText(line, { x:1, y, fontSize:16, color:'000000' });
           y += 0.5;
         });
 
-        // 🔸 سلايدات الصور
-        const boxes = document.querySelectorAll(".image-box img");
-        boxes.forEach((img, i) => {
-          if (img.src) {
-            const s = pptx.addSlide();
-            s.addImage({ data: img.src, x: 0.5, y: 0.5, w: 8.5, h: 5 });
-            s.addText(`صورة ${i + 1}`, { x: 4, y: 6, fontSize: 16, color: "444" });
-          }
-        });
+        // إضافة الصور كل واحدة في سلايد منفصل
+        const imgs = Array.from(document.querySelectorAll('.image-box img')).map(i=>i.src).filter(Boolean);
+        for (let i=0;i<imgs.length;i++) {
+          const s = pptx.addSlide();
+          // حجم الصورة تقريبي، PPTXGen يتقبل dataURL
+          s.addImage({ data: imgs[i], x:0.4, y:0.4, w:9, h:5 });
+          s.addText(`صورة ${i+1}`, { x:4, y:5.6, fontSize:14, color:'444444' });
+        }
 
-        await pptx.writeFile({ fileName: `presentation_${merchCode || "client"}.pptx` });
-        alert("✅ تم تصدير العرض بنجاح!");
+        // حفظ الملف (await لضمان انتهاء العملية)
+        const filename = `presentation_${merchCode || 'client'}.pptx`;
+        await pptx.writeFile({ fileName: filename });
+        setStatus('✅ تم تصدير العرض: ' + filename);
       } catch (err) {
-        console.error(err);
-        alert("حدث خطأ أثناء تصدير العرض.");
+        console.error('export error', err);
+        setStatus('حدث خطأ أثناء التصدير. افتح الكونسول لمزيد من التفاصيل.', true);
+        alert('خطأ في التصدير — تأكد من وجود صور صالحة أو افتح الكونسول.');
+      } finally {
+        exportBtn.classList.remove('disabled');
+        exportBtn.textContent = '🧾 تصدير العرض';
       }
     });
-  </script>
 
+    // زر إضافة سلايد (محلّي — مجرد مثال توسيعي مستقبلي)
+    document.getElementById('addSlide').addEventListener('click', () => {
+      alert('ميزة إضافة سلايد منفصل سيتم تنفيذها لو حبيت. دلوقتي التصدير ينشئ سلايد بيانات + سلايد لكل صورة.');
+    });
+
+    // شغّل البحث لو المستخدم كتب كود وغادر الخانة
+    merchInput.addEventListener('blur', () => { /* احفظ تلقائيًا فقط */ saveData(); });
+
+  </script>
 </body>
 </html>
