@@ -13,11 +13,10 @@
     button {
       padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; margin: 10px;
     }
-    #addSlide { background: #007bff; color: white; }
-    #exportButton { background: #007bff; color: white; }
+    #addSlide, #exportButton { background: #007bff; color: white; }
     .image-box {
       display: inline-block; width: 250px; height: 150px; border: 2px dashed #ccc;
-      border-radius: 12px; margin: 10px; vertical-align: top; background: #eef3ff;
+      border-radius: 12px; margin: 10px; vertical-align: top; background: #eef3ff; overflow: hidden;
     }
     .image-box img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
   </style>
@@ -65,7 +64,6 @@
   </div>
 
   <p>اضغط على أي مربع لاختيار صورة من الكاميرا أو المعرض.</p>
-
   <p>قائمة السلايدات:<br><strong>سلايد 1</strong></p>
 
   <hr>
@@ -99,32 +97,66 @@
         }
 
         if (!found) alert("الكود غير موجود في الشيت.");
+        saveData();
       } catch (e) {
         alert("حدث خطأ أثناء تحميل البيانات من الشيت.");
       }
     });
   </script>
 
-  <!-- 🔹 اختيار الصور -->
+  <!-- 🔹 اختيار الصور (كاميرا + معرض بدون حذف أي اختيار) -->
   <script>
-    document.querySelectorAll(".image-box").forEach(box => {
+    document.querySelectorAll(".image-box").forEach((box, index) => {
       box.addEventListener("click", () => {
         const input = document.createElement("input");
         input.type = "file";
         input.accept = "image/*";
-        input.capture = "environment";
+        // ✅ بدون capture حتى يظهر خيار الكاميرا والمعرض معًا
         input.onchange = e => {
           const file = e.target.files[0];
           if (!file) return;
           const reader = new FileReader();
           reader.onload = ev => {
             box.innerHTML = `<img src="${ev.target.result}" alt="صورة العميل">`;
+            saveData();
           };
           reader.readAsDataURL(file);
         };
         input.click();
       });
     });
+  </script>
+
+  <!-- 🔹 الحفظ التلقائي واسترجاع البيانات -->
+  <script>
+    const fields = ["merchCode", "accCode", "customerName", "address", "customerType", "gov", "notes"];
+
+    function saveData() {
+      const data = {};
+      fields.forEach(id => data[id] = document.getElementById(id).value);
+      const images = [];
+      document.querySelectorAll(".image-box img").forEach(img => images.push(img.src));
+      data.images = images;
+      localStorage.setItem("presentationData", JSON.stringify(data));
+    }
+
+    function loadData() {
+      const saved = localStorage.getItem("presentationData");
+      if (!saved) return;
+      const data = JSON.parse(saved);
+      fields.forEach(id => {
+        if (data[id]) document.getElementById(id).value = data[id];
+      });
+      const boxes = document.querySelectorAll(".image-box");
+      if (data.images) {
+        data.images.forEach((src, i) => {
+          if (boxes[i]) boxes[i].innerHTML = `<img src="${src}" alt="صورة العميل">`;
+        });
+      }
+    }
+
+    window.addEventListener("load", loadData);
+    fields.forEach(id => document.getElementById(id).addEventListener("input", saveData));
   </script>
 
   <!-- 🔹 مكتبة إنشاء PowerPoint -->
@@ -141,8 +173,8 @@
       const gov = document.getElementById("gov").value || "";
       const notes = document.getElementById("notes").value || "";
 
-      let pptx = new PptxGenJS();
-      let slide = pptx.addSlide();
+      const pptx = new PptxGenJS();
+      const slide = pptx.addSlide();
 
       slide.addText("بيانات العميل", { x: 1, y: 0.4, fontSize: 28, bold: true, color: "003366" });
 
@@ -160,6 +192,16 @@
       info.forEach(line => {
         slide.addText(line, { x: 1, y, fontSize: 16, color: "000000" });
         y += 0.4;
+      });
+
+      // 🔹 إضافة الصور إلى شرائح منفصلة
+      const boxes = document.querySelectorAll(".image-box img");
+      boxes.forEach((img, i) => {
+        if (img.src) {
+          const s = pptx.addSlide();
+          s.addImage({ data: img.src, x: 0.5, y: 0.5, w: 8, h: 5 });
+          s.addText(`صورة ${i + 1}`, { x: 3.5, y: 6, fontSize: 16, color: "444" });
+        }
       });
 
       pptx.writeFile({ fileName: `presentation_${merchCode || "client"}.pptx` });
