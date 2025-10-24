@@ -255,6 +255,15 @@
       margin-top: 15px;
     }
     
+    .data-source {
+      background: #e8f5e8;
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 10px;
+      border: 1px solid #c8e6c9;
+      font-size: 12px;
+    }
+    
     @media (max-width: 768px) {
       .placeholders {
         grid-template-columns: 1fr;
@@ -286,6 +295,13 @@
         <button id="refreshDataBtn" class="ghost">🔄 تحديث البيانات</button>
       </div>
     </header>
+
+    <div class="data-source">
+      <strong>مصدر البيانات:</strong> GitHub
+      <div style="margin-top: 5px; font-size: 11px; color: #666;">
+        يتم تحميل البيانات من ملف على GitHub
+      </div>
+    </div>
 
     <section class="form-grid">
       <div>
@@ -359,93 +375,147 @@
       }, time);
     }
 
-    // ✅ تحميل البيانات من Google Sheets
-    const SHEET_URL = "https://docs.google.com/spreadsheets/d/1N6b3EQdXS4X8fMtHZ04tHkwKTOgNzQyuLVA-V7HZzOk/gviz/tq?tqx=out:json";
+    // ✅ تحميل البيانات من GitHub (بدلاً من Google Sheets)
+    // اختر أحد الخيارات التالية:
+
+    // الخيار 1: ملف Excel على GitHub
+    const GITHUB_EXCEL_URL = "https://raw.githubusercontent.com/username/repo/main/customers.xlsx";
+
+    // الخيار 2: ملف CSV على GitHub
+    const GITHUB_CSV_URL = "https://raw.githubusercontent.com/username/repo/main/customers.csv";
+
+    // الخيار 3: ملف JSON على GitHub (الأسهل)
+    const GITHUB_JSON_URL = "https://raw.githubusercontent.com/username/repo/main/customers.json";
+
+    // حالياً سنستخدم ملف Excel كمثال
+    const DATA_URL = GITHUB_EXCEL_URL;
 
     async function loadSheetData() {
       try {
         showToast('جاري تحميل بيانات العملاء...', 'info');
         
         // إضافة طابع زمني لمنع التخزين المؤقت
-        const url = SHEET_URL + '&t=' + new Date().getTime();
+        const url = DATA_URL + '?t=' + new Date().getTime();
         const res = await fetch(url);
         
         if (!res.ok) {
-          throw new Error(`خطأ في تحميل البيانات`);
+          throw new Error(`خطأ في تحميل البيانات من GitHub`);
         }
         
-        const text = await res.text();
+        // الحصول على البيانات كـ ArrayBuffer
+        const arrayBuffer = await res.arrayBuffer();
         
-        // محاولات متعددة لتحليل JSON
-        let json;
+        // قراءة ملف Excel باستخدام مكتبة xlsx
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
         
-        try {
-          // المحاولة الأولى - الطريقة الأصلية
-          json = JSON.parse(text.substr(47).slice(0, -2));
-        } catch (e1) {
-          // المحاولة الثانية - البحث عن JSON في النص
-          const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(({.*})\);/);
-          if (jsonMatch && jsonMatch[1]) {
-            json = JSON.parse(jsonMatch[1]);
-          } else {
-            throw new Error('لا يمكن تحليل بيانات الرد');
-          }
-        }
-
-        // معالجة البيانات
-        if (json.table && json.table.rows) {
-          excelData = json.table.rows.map((row, index) => {
-            // معالجة أكثر قوة للبيانات
-            const processCell = (cell) => {
-              if (!cell) return '';
-              if (cell.v !== null && cell.v !== undefined) {
-                return String(cell.v);
-              }
-              if (cell.f !== null && cell.f !== undefined) {
-                return String(cell.f);
-              }
-              return '';
-            };
-
-            return {
-              "Merch Code": processCell(row.c[0]).trim(),
-              "Acc-Code": processCell(row.c[1]).trim(),
-              "Customer Name": processCell(row.c[2]).trim(),
-              "Customer Address": processCell(row.c[3]).trim(),
-              "Customer Type": processCell(row.c[4]).trim(),
-              "Gov.": processCell(row.c[5]).trim(),
-              "Notes": processCell(row.c[6]).trim()
-            };
-          }).filter(item => item["Merch Code"] !== '');
-
-        } else if (json.rows) {
-          // تنسيق بدليل للبيانات
-          excelData = json.rows.map((row, index) => {
-            return {
-              "Merch Code": String(row[0] || '').trim(),
-              "Acc-Code": String(row[1] || '').trim(),
-              "Customer Name": String(row[2] || '').trim(),
-              "Customer Address": String(row[3] || '').trim(),
-              "Customer Type": String(row[4] || '').trim(),
-              "Gov.": String(row[5] || '').trim(),
-              "Notes": String(row[6] || '').trim()
-            };
-          }).filter(item => item["Merch Code"] !== '');
-        } else {
-          throw new Error('تنسيق بيانات غير معروف');
-        }
+        // الحصول على أول sheet
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        // تحويل الـ sheet إلى JSON
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        
+        // تحويل البيانات إلى التنسيق المطلوب
+        excelData = jsonData.map(row => {
+          return {
+            "Merch Code": String(row['Merch Code'] || '').trim(),
+            "Acc-Code": String(row['Acc-Code'] || '').trim(),
+            "Customer Name": String(row['Customer Name'] || '').trim(),
+            "Customer Address": String(row['Customer Address'] || '').trim(),
+            "Customer Type": String(row['Customer Type'] || '').trim(),
+            "Gov.": String(row['Gov.'] || '').trim(),
+            "Notes": String(row['Notes'] || '').trim()
+          };
+        }).filter(item => item["Merch Code"] !== '');
 
         showToast(`تم تحميل ${excelData.length} سجل من بيانات العملاء`, 'success');
         
       } catch (err) {
         console.error('خطأ في تحميل بيانات الورقة:', err);
-        showToast('فشل تحميل بيانات العملاء. تأكد من اتصال الإنترنت.', 'error');
+        showToast('فشل تحميل بيانات العملاء. تأكد من اتصال الإنترنت وصحة رابط الملف.', 'error');
+        excelData = [];
+      }
+    }
+
+    // إذا كنت تفضل استخدام CSV بدلاً من Excel، استخدم هذه الدالة:
+    async function loadCSVData() {
+      try {
+        showToast('جاري تحميل بيانات العملاء...', 'info');
+        
+        const url = GITHUB_CSV_URL + '?t=' + new Date().getTime();
+        const res = await fetch(url);
+        
+        if (!res.ok) {
+          throw new Error(`خطأ في تحميل البيانات من GitHub`);
+        }
+        
+        const csvText = await res.text();
+        
+        // تحويل CSV إلى JSON
+        const workbook = XLSX.read(csvText, { type: 'string' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        
+        excelData = jsonData.map(row => {
+          return {
+            "Merch Code": String(row['Merch Code'] || '').trim(),
+            "Acc-Code": String(row['Acc-Code'] || '').trim(),
+            "Customer Name": String(row['Customer Name'] || '').trim(),
+            "Customer Address": String(row['Customer Address'] || '').trim(),
+            "Customer Type": String(row['Customer Type'] || '').trim(),
+            "Gov.": String(row['Gov.'] || '').trim(),
+            "Notes": String(row['Notes'] || '').trim()
+          };
+        }).filter(item => item["Merch Code"] !== '');
+
+        showToast(`تم تحميل ${excelData.length} سجل من بيانات العملاء`, 'success');
+        
+      } catch (err) {
+        console.error('خطأ في تحميل بيانات CSV:', err);
+        showToast('فشل تحميل بيانات العملاء.', 'error');
+        excelData = [];
+      }
+    }
+
+    // إذا كنت تفضل استخدام JSON مباشرة، استخدم هذه الدالة:
+    async function loadJSONData() {
+      try {
+        showToast('جاري تحميل بيانات العملاء...', 'info');
+        
+        const url = GITHUB_JSON_URL + '?t=' + new Date().getTime();
+        const res = await fetch(url);
+        
+        if (!res.ok) {
+          throw new Error(`خطأ في تحميل البيانات من GitHub`);
+        }
+        
+        const jsonData = await res.json();
+        
+        // تأكد من أن البيانات في التنسيق الصحيح
+        excelData = jsonData.map(item => {
+          return {
+            "Merch Code": String(item['Merch Code'] || '').trim(),
+            "Acc-Code": String(item['Acc-Code'] || '').trim(),
+            "Customer Name": String(item['Customer Name'] || '').trim(),
+            "Customer Address": String(item['Customer Address'] || '').trim(),
+            "Customer Type": String(item['Customer Type'] || '').trim(),
+            "Gov.": String(item['Gov.'] || '').trim(),
+            "Notes": String(item['Notes'] || '').trim()
+          };
+        }).filter(item => item["Merch Code"] !== '');
+
+        showToast(`تم تحميل ${excelData.length} سجل من بيانات العملاء`, 'success');
+        
+      } catch (err) {
+        console.error('خطأ في تحميل بيانات JSON:', err);
+        showToast('فشل تحميل بيانات العملاء.', 'error');
         excelData = [];
       }
     }
 
     // تحميل البيانات عند بدء التشغيل
-    loadSheetData();
+    loadSheetData(); // استخدم loadCSVData() أو loadJSONData() حسب نوع الملف
 
     // 🧠 تعبئة البيانات عند كتابة Merch Code
     document.getElementById('merchCode').addEventListener('input', () => {
@@ -498,11 +568,11 @@
       }
     });
 
+    // باقي الدوال تبقى كما هي بدون تغيير
     // فتح نافذة اختيار الصورة
     function openImagePicker(idx) {
       pendingIdx = idx;
       
-      // إنشاء نافذة اختيار المصدر
       const modal = document.createElement('div');
       modal.className = 'modal';
       modal.innerHTML = `
@@ -517,7 +587,6 @@
       
       document.body.appendChild(modal);
 
-      // إضافة حدث للكاميرا
       modal.querySelector('#camBtn').addEventListener('click', () => {
         document.body.removeChild(modal);
         const camInput = document.createElement('input');
@@ -534,14 +603,12 @@
         camInput.click();
       });
 
-      // إضافة حدث للمعرض
       modal.querySelector('#galleryBtn').addEventListener('click', () => {
         document.body.removeChild(modal);
         hiddenInput.value = '';
         hiddenInput.click();
       });
 
-      // إغلاق النافذة عند النقر خارجها
       modal.addEventListener('click', e => {
         if (e.target === modal) {
           document.body.removeChild(modal);
@@ -549,7 +616,6 @@
       });
     }
 
-    // معالجة الملف المختار
     async function handleSelectedFile(file) {
       if (!file) return;
       
@@ -567,7 +633,6 @@
       }
     }
 
-    // تحويل الملف إلى Data URL
     function fileToDataURL(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -577,7 +642,6 @@
       });
     }
 
-    // تغيير حجم الصورة
     function resizeDataUrl(dataUrl, maxWidth, quality = 0.85) {
       return new Promise((resolve, reject) => {
         const img = new Image();
@@ -600,13 +664,11 @@
       });
     }
 
-    // إضافة حدث لاختيار الملف
     hiddenInput.addEventListener('change', async e => {
       const file = e.target.files && e.target.files[0];
       await handleSelectedFile(file);
     });
 
-    // عرض قائمة السلايدات
     function renderSlides() {
       slidesListEl.innerHTML = '';
       slides.forEach((slide, index) => {
@@ -621,7 +683,6 @@
       });
     }
 
-    // عرض السلايد الحالي
     function renderCurrentSlide() {
       placeholdersEl.innerHTML = '';
       slides[currentIndex].forEach((data, index) => {
@@ -646,7 +707,6 @@
       renderSlides();
     }
 
-    // أحداث الأزرار
     document.getElementById('addSlideBtn').addEventListener('click', () => {
       slides.push([null, null, null]);
       currentIndex = slides.length - 1;
@@ -663,14 +723,11 @@
       }
     });
 
-    // زر تحديث البيانات
     document.getElementById('refreshDataBtn').addEventListener('click', () => {
       loadSheetData();
     });
 
-    // تصدير العرض التقديمي
     document.getElementById('exportBtn').addEventListener('click', async () => {
-      // التحقق من وجود صور
       const hasImages = slides.some(slide => slide.some(img => img !== null));
       if (!hasImages) {
         showToast('يرجى إضافة صورة واحدة على الأقل', 'error');
@@ -691,11 +748,9 @@
         const gov = document.getElementById('custGov').value || 'غير محدد';
         const notes = document.getElementById('notes').value || 'لا توجد ملاحظات';
 
-        // إضافة كل سلايد
         slides.forEach((slide, index) => {
           const slideObj = pptx.addSlide();
           
-          // عرض الصور
           const imgWidth = (13.33 - (0.6 * 2) - 0.3 * 2) / 3;
           const imgHeight = 4.5;
           
@@ -712,7 +767,6 @@
                 h: imgHeight
               });
             } else {
-              // إضافة مربع فارغ إذا لم توجد صورة
               slideObj.addShape(pptx.ShapeType.rect, {
                 x: x,
                 y: y,
@@ -722,7 +776,6 @@
                 line: { color: 'CCCCCC' }
               });
               
-              // إضافة نص للمربع الفارغ
               slideObj.addText('لا توجد صورة', {
                 x: x,
                 y: y + imgHeight / 2 - 0.2,
@@ -735,7 +788,6 @@
             }
           });
           
-          // إضافة جدول البيانات
           const rows = [
             [
               { text: 'Merch Code', options: { bold: true } },
@@ -758,7 +810,6 @@
             fill: { color: 'F9F9F9' }
           });
           
-          // إضافة عنوان للسلايد
           slideObj.addText(`سلايد ${index + 1}`, {
             x: 0.3,
             y: 0.2,
@@ -770,7 +821,6 @@
           });
         });
 
-        // حفظ الملف
         await pptx.writeFile({ fileName: `presentation_${merch || 'unknown'}.pptx` });
         showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
       } catch (error) {
