@@ -375,196 +375,208 @@
       }, time);
     }
 
-    // ✅ تحميل البيانات من GitHub (بدلاً من Google Sheets)
-    // اختر أحد الخيارات التالية:
+    // رابط البيانات من GitHub
+    const GITHUB_EXCEL_URL = "https://raw.githubusercontent.com/aicordinators-ux/presentation-app/main/Customers%202025.xlsx";
 
-    // الخيار 1: ملف Excel على GitHub
-    const GITHUB_EXCEL_URL = "https://cdn.jsdelivr.net/gh/aicordinators-ux/presentation-app@main/Customers%202025.xlsx";
-
-    // الخيار 2: ملف CSV على GitHub
-    const GITHUB_CSV_URL = "https://raw.githubusercontent.com/username/repo/main/customers.csv";
-
-    // الخيار 3: ملف JSON على GitHub (الأسهل)
-    const GITHUB_JSON_URL = "https://raw.githubusercontent.com/username/repo/main/customers.json";
-
-    // حالياً سنستخدم ملف Excel كمثال
-    const DATA_URL = GITHUB_EXCEL_URL;
-
+    // دالة تحميل البيانات الرئيسية
     async function loadSheetData() {
-  try {
-    showToast('جاري تحميل بيانات العملاء...', 'info');
-    
-    // إضافة طابع زمني لمنع التخزين المؤقت
-    const url = GITHUB_EXCEL_URL + '?t=' + new Date().getTime();
-    console.log('جاري تحميل من:', url);
-    const res = await fetch(url);
-    
-    if (!res.ok) {
-      throw new Error(`خطأ في تحميل البيانات من GitHub - Status: ${res.status}`);
-    }
-    
-    // الحصول على البيانات كـ ArrayBuffer
-    const arrayBuffer = await res.arrayBuffer();
-    
-    // قراءة ملف Excel باستخدام مكتبة xlsx
-    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-    
-    // عرض أسماء الشيتات المتاحة
-    console.log('الشيتات المتاحة:', workbook.SheetNames);
-    
-    // الحصول على أول sheet
-    const firstSheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[firstSheetName];
-    
-    // عرض نطاق البيانات
-    console.log('نطاق البيانات:', worksheet['!ref']);
-    
-    // تحويل الـ sheet إلى JSON
-    const jsonData = XLSX.utils.sheet_to_json(worksheet);
-    console.log('البيانات الخام:', jsonData);
-    
-    // إذا كانت البيانات فارغة، جرب الشيت الثاني
-    if (jsonData.length === 0 && workbook.SheetNames.length > 1) {
-      const secondSheet = workbook.Sheets[workbook.SheetNames[1]];
-      const secondData = XLSX.utils.sheet_to_json(secondSheet);
-      console.log('بيانات الشيت الثاني:', secondData);
-    }
-    
-    // تحويل البيانات إلى التنسيق المطلوب
-    excelData = jsonData.map(row => {
-      // البحث عن الأعمدة بطرق مختلفة
-      const merchCode = row['Merch Code'] || row['merch code'] || row['MerchCode'] || row['merchCode'] || '';
-      const accCode = row['Acc-Code'] || row['acc code'] || row['AccCode'] || row['accCode'] || '';
-      const custName = row['Customer Name'] || row['customer name'] || row['CustomerName'] || row['customerName'] || '';
-      const custAddress = row['Customer Address'] || row['customer address'] || row['CustomerAddress'] || row['customerAddress'] || '';
-      const custType = row['Customer Type'] || row['customer type'] || row['CustomerType'] || row['customerType'] || '';
-      const gov = row['Gov.'] || row['gov'] || row['Governorate'] || row['governorate'] || '';
-      const notes = row['Notes'] || row['notes'] || '';
-      
-      return {
-        "Merch Code": String(merchCode).trim(),
-        "Acc-Code": String(accCode).trim(),
-        "Customer Name": String(custName).trim(),
-        "Customer Address": String(custAddress).trim(),
-        "Customer Type": String(custType).trim(),
-        "Gov.": String(gov).trim(),
-        "Notes": String(notes).trim()
-      };
-    }).filter(item => item["Merch Code"] !== '');
-
-    console.log('البيانات بعد المعالجة:', excelData);
-    showToast(`تم تحميل ${excelData.length} سجل من بيانات العملاء`, 'success');
-    
-  } catch (err) {
-    console.error('خطأ في تحميل بيانات الورقة:', err);
-    showToast('فشل تحميل بيانات العملاء. تأكد من اتصال الإنترنت وصحة رابط الملف.', 'error');
-    excelData = [];
-  }
-}
-
-    // إذا كنت تفضل استخدام JSON مباشرة، استخدم هذه الدالة:
-    async function loadJSONData() {
       try {
         showToast('جاري تحميل بيانات العملاء...', 'info');
         
-        const url = GITHUB_JSON_URL + '?t=' + new Date().getTime();
+        // استخدام CORS proxy لتجاوز مشكلة الـ 403
+        const proxyUrl = 'https://api.allorigins.win/raw?url=';
+        const targetUrl = encodeURIComponent(GITHUB_EXCEL_URL + '?t=' + new Date().getTime());
+        const url = proxyUrl + targetUrl;
+        
+        console.log('جاري تحميل من:', url);
         const res = await fetch(url);
         
         if (!res.ok) {
-          throw new Error(`خطأ في تحميل البيانات من GitHub`);
+          throw new Error(`خطأ في تحميل البيانات - Status: ${res.status}`);
         }
         
-        const jsonData = await res.json();
+        const arrayBuffer = await res.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
         
-        // تأكد من أن البيانات في التنسيق الصحيح
-        excelData = jsonData.map(item => {
+        console.log('الشيتات المتاحة:', workbook.SheetNames);
+        
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        console.log('نطاق البيانات:', worksheet['!ref']);
+        
+        // الحصول على جميع البيانات كمصفوفة
+        const allData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        console.log('جميع البيانات:', allData);
+        
+        // البحث عن صف العناوين
+        let headers = [];
+        let dataStartRow = 0;
+        
+        for (let i = 0; i < Math.min(10, allData.length); i++) {
+          const row = allData[i];
+          if (Array.isArray(row)) {
+            const stringRow = row.map(cell => String(cell).toLowerCase());
+            // البحث عن صف يحتوي على الكلمات المفتاحية للعناوين
+            const hasMerch = stringRow.some(cell => cell.includes('merch') || cell.includes('كود'));
+            const hasCustomer = stringRow.some(cell => cell.includes('customer') || cell.includes('عميل'));
+            
+            if (hasMerch && hasCustomer) {
+              headers = row.map(cell => String(cell));
+              dataStartRow = i + 1;
+              break;
+            }
+          }
+        }
+        
+        // إذا لم نجد عناوين، نستخدم الترتيب الافتراضي
+        if (headers.length === 0) {
+          headers = ['Merch Code', 'Acc-Code', 'Customer Name', 'Customer Address', 'Customer Type', 'Gov.', 'Notes'];
+          dataStartRow = 0;
+        }
+        
+        console.log('العناوين المكتشفة:', headers);
+        console.log('صف بداية البيانات:', dataStartRow);
+        
+        // تحويل البيانات مع العناوين المكتشفة
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+          header: headers,
+          range: dataStartRow 
+        });
+        
+        console.log('البيانات مع العناوين:', jsonData);
+        
+        // معالجة البيانات
+        excelData = jsonData.map(row => {
           return {
-            "Merch Code": String(item['Merch Code'] || '').trim(),
-            "Acc-Code": String(item['Acc-Code'] || '').trim(),
-            "Customer Name": String(item['Customer Name'] || '').trim(),
-            "Customer Address": String(item['Customer Address'] || '').trim(),
-            "Customer Type": String(item['Customer Type'] || '').trim(),
-            "Gov.": String(item['Gov.'] || '').trim(),
-            "Notes": String(item['Notes'] || '').trim()
+            "Merch Code": String(row[headers[0]] || '').trim(),
+            "Acc-Code": String(row[headers[1]] || '').trim(),
+            "Customer Name": String(row[headers[2]] || '').trim(),
+            "Customer Address": String(row[headers[3]] || '').trim(),
+            "Customer Type": String(row[headers[4]] || '').trim(),
+            "Gov.": String(row[headers[5]] || '').trim(),
+            "Notes": String(row[headers[6]] || '').trim()
           };
-        }).filter(item => item["Merch Code"] !== '');
+        }).filter(item => item["Merch Code"] !== '' && item["Merch Code"] !== undefined);
 
-        showToast(`تم تحميل ${excelData.length} سجل من بيانات العملاء`, 'success');
+        console.log('البيانات بعد المعالجة:', excelData);
+        
+        if (excelData.length > 0) {
+          showToast(`تم تحميل ${excelData.length} سجل من بيانات العملاء`, 'success');
+          // اختبار: حاول البحث عن أول كود في البيانات
+          setTimeout(() => {
+            const testCode = excelData[0]["Merch Code"];
+            console.log('جرب استخدام الكود:', testCode);
+          }, 1000);
+        } else {
+          showToast('تم تحميل الملف ولكن لم يتم العثور على بيانات', 'warning');
+        }
         
       } catch (err) {
-        console.error('خطأ في تحميل بيانات JSON:', err);
-        showToast('فشل تحميل بيانات العملاء.', 'error');
-        excelData = [];
+        console.error('خطأ في تحميل بيانات الورقة:', err);
+        showToast('فشل تحميل بيانات العملاء. جاري استخدام بيانات تجريبية...', 'error');
+        
+        // بيانات تجريبية للطوارئ
+        excelData = [
+          {
+            "Merch Code": "00001243",
+            "Acc-Code": "002001690",
+            "Customer Name": "Sila",
+            "Customer Address": "Ba ~ 5all 53) opal pest oe Ete Slab Sales Cals",
+            "Customer Type": "Daimond", 
+            "Gov.": "Giza",
+            "Notes": ""
+          },
+          {
+            "Merch Code": "00001245",
+            "Acc-Code": "002004141", 
+            "Customer Name": "Drara co",
+            "Customer Address": "Seal = Gall aud — Gates 57",
+            "Customer Type": "Daimond",
+            "Gov.": "Giza",
+            "Notes": ""
+          },
+          {
+            "Merch Code": "00001246",
+            "Acc-Code": "002001695", 
+            "Customer Name": "Oba CSibe",
+            "Customer Address": "si eensigall Oldguall GLb 319 jibe",
+            "Customer Type": "Daimond",
+            "Gov.": "Giza",
+            "Notes": ""
+          }
+        ];
+        
+        showToast(`تم تحميل ${excelData.length} سجل تجريبي`, 'success');
       }
     }
 
     // تحميل البيانات عند بدء التشغيل
     loadSheetData();
 
-// إضافة للتحقق - إظهار عدد البيانات المحملة
-setTimeout(() => {
-    console.log('عدد سجلات البيانات المحملة:', excelData.length);
-    if (excelData.length > 0) {
+    // إضافة للتحقق - إظهار عدد البيانات المحملة
+    setTimeout(() => {
+      console.log('عدد سجلات البيانات المحملة:', excelData.length);
+      if (excelData.length > 0) {
         console.log('أمثلة على البيانات:', excelData.slice(0, 3));
-    }
-}, 2000);
-    
-    // 🧠 تعبئة البيانات عند كتابة Merch Code
+      }
+    }, 2000);
+        
+    // تعبئة البيانات عند كتابة Merch Code
     document.getElementById('merchCode').addEventListener('input', () => {
-  const code = document.getElementById('merchCode').value.trim();
-  console.log('بحث عن الكود:', code, 'في', excelData.length, 'سجل');
-  
-  // إذا كان الحقل فارغ، امسح باقي الحقول
-  if (code === '') {
-    document.getElementById('accCode').value = '';
-    document.getElementById('custName').value = '';
-    document.getElementById('custAddress').value = '';
-    document.getElementById('custType').value = '';
-    document.getElementById('custGov').value = '';
-    document.getElementById('notes').value = '';
-    return;
-  }
+      const code = document.getElementById('merchCode').value.trim();
+      console.log('بحث عن الكود:', code, 'في', excelData.length, 'سجل');
+      
+      // إذا كان الحقل فارغ، امسح باقي الحقول
+      if (code === '') {
+        document.getElementById('accCode').value = '';
+        document.getElementById('custName').value = '';
+        document.getElementById('custAddress').value = '';
+        document.getElementById('custType').value = '';
+        document.getElementById('custGov').value = '';
+        document.getElementById('notes').value = '';
+        return;
+      }
 
-  // البحث في البيانات
-  const match = excelData.find(item => {
-    const merchCode = String(item['Merch Code'] || '').trim();
-    console.log('مقارنة:', merchCode, 'مع', code);
-    
-    // محاولات مطابقة مختلفة
-    if (merchCode === code) return true;
-    if (merchCode.replace(/^0+/, '') === code.replace(/^0+/, '')) return true;
-    if (merchCode.padStart(Math.max(merchCode.length, code.length), '0') === 
-        code.padStart(Math.max(merchCode.length, code.length), '0')) return true;
-    
-    return false;
-  });
+      // البحث في البيانات
+      const match = excelData.find(item => {
+        const merchCode = String(item['Merch Code'] || '').trim();
+        console.log('مقارنة:', merchCode, 'مع', code);
+        
+        // محاولات مطابقة مختلفة
+        if (merchCode === code) return true;
+        if (merchCode.replace(/^0+/, '') === code.replace(/^0+/, '')) return true;
+        if (merchCode.padStart(Math.max(merchCode.length, code.length), '0') === 
+            code.padStart(Math.max(merchCode.length, code.length), '0')) return true;
+        
+        return false;
+      });
 
-  if (match) {
-    console.log('تم العثور على:', match);
-    document.getElementById('accCode').value = match['Acc-Code'] || '';
-    document.getElementById('custName').value = match['Customer Name'] || '';
-    document.getElementById('custAddress').value = match['Customer Address'] || '';
-    document.getElementById('custType').value = match['Customer Type'] || '';
-    document.getElementById('custGov').value = match['Gov.'] || '';
-    document.getElementById('notes').value = match['Notes'] || '';
-    showToast('تم تحميل بيانات العميل', 'success');
-  } else {
-    // مسح الحقول إذا لم يتم العثور على التاجر
-    document.getElementById('accCode').value = '';
-    document.getElementById('custName').value = '';
-    document.getElementById('custAddress').value = '';
-    document.getElementById('custType').value = '';
-    document.getElementById('custGov').value = '';
-    document.getElementById('notes').value = '';
-    
-    if (code.length > 0) {
-      console.log('لم يتم العثور على:', code);
-      showToast('لم يتم العثور على بيانات لهذا الكود', 'error');
-    }
-  }
-});
+      if (match) {
+        console.log('تم العثور على:', match);
+        document.getElementById('accCode').value = match['Acc-Code'] || '';
+        document.getElementById('custName').value = match['Customer Name'] || '';
+        document.getElementById('custAddress').value = match['Customer Address'] || '';
+        document.getElementById('custType').value = match['Customer Type'] || '';
+        document.getElementById('custGov').value = match['Gov.'] || '';
+        document.getElementById('notes').value = match['Notes'] || '';
+        showToast('تم تحميل بيانات العميل', 'success');
+      } else {
+        // مسح الحقول إذا لم يتم العثور على التاجر
+        document.getElementById('accCode').value = '';
+        document.getElementById('custName').value = '';
+        document.getElementById('custAddress').value = '';
+        document.getElementById('custType').value = '';
+        document.getElementById('custGov').value = '';
+        document.getElementById('notes').value = '';
+        
+        if (code.length > 0) {
+          console.log('لم يتم العثور على:', code);
+          showToast('لم يتم العثور على بيانات لهذا الكود', 'error');
+        }
+      }
+    });
 
-    // باقي الدوال تبقى كما هي بدون تغيير
     // فتح نافذة اختيار الصورة
     function openImagePicker(idx) {
       pendingIdx = idx;
