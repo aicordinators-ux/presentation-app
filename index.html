@@ -1061,7 +1061,10 @@
       }
     });
 
-    document.getElementById('exportBtn').addEventListener('click', async () => {
+    // رابط التيمبلت من GitHub
+const PPT_TEMPLATE_URL = "https://raw.githubusercontent.com/aicordinators-ux/presentation-app/main/presentationtemplate.pptx";
+
+document.getElementById('exportBtn').addEventListener('click', async () => {
   const hasImages = slides.some(slide => slide.images.some(img => img !== null));
   if (!hasImages) {
     showToast('يرجى إضافة صورة واحدة على الأقل', 'error');
@@ -1069,23 +1072,66 @@
   }
 
   try {
-    showToast('جاري إنشاء العرض التقديمي...', 'info');
+    showToast('جاري تحميل القالب وإنشاء العرض...', 'info');
     
-    const pptx = new PptxGenJS();
-    pptx.layout = 'LAYOUT_WIDE';
-    
+    let pptx;
+    let templateLoaded = false;
+
+    // محاولة تحميل التيمبلت من GitHub
+    try {
+      showToast('جاري تحميل القالب...', 'info');
+      const response = await fetch(PPT_TEMPLATE_URL);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const arrayBuffer = await response.arrayBuffer();
+      
+      // إنشاء العرض التقديمي مع التيمبلت
+      pptx = new PptxGenJS();
+      await pptx.load(arrayBuffer);
+      templateLoaded = true;
+      showToast('تم تحميل القالب بنجاح', 'success');
+      
+    } catch (templateError) {
+      console.warn('فشل تحميل القالب، جاري استخدام القالب الافتراضي:', templateError);
+      pptx = new PptxGenJS();
+      pptx.layout = 'LAYOUT_WIDE';
+      showToast('جارٍ استخدام القالب الافتراضي', 'warning');
+    }
+
+    // مسح السلايدات الموجودة في التيمبلت (لو كان محمل)
+    if (templateLoaded) {
+      // احتفظ بالسلايد ماستر وامسح السلايدات العادية فقط
+      pptx.slides = [];
+    }
+
+    // إضافة السلايدات الجديدة
     slides.forEach((slide, index) => {
       const slideObj = pptx.addSlide();
       
       const imgWidth = (13.33 - (0.6 * 2) - 0.3 * 2) / 3;
       const imgHeight = 4.5;
+      const borderWidth = 0.08;
       
-      // إضافة الصور
+      // إضافة الصور مع إطار أسود عريض
       slide.images.forEach((data, j) => {
         const x = 0.6 + j * (imgWidth + 0.15);
         const y = 1.0;
         
         if (data) {
+          // إضافة الإطار الأسود
+          slideObj.addShape(pptx.ShapeType.rect, {
+            x: x - borderWidth/2,
+            y: y - borderWidth/2,
+            w: imgWidth + borderWidth,
+            h: imgHeight + borderWidth,
+            fill: { color: '000000' },
+            line: { color: '000000', width: 1 }
+          });
+          
+          // إضافة الصورة
           slideObj.addImage({
             data: data,
             x: x,
@@ -1094,13 +1140,23 @@
             h: imgHeight
           });
         } else {
+          // للمربعات الفارغة
+          slideObj.addShape(pptx.ShapeType.rect, {
+            x: x - borderWidth/2,
+            y: y - borderWidth/2,
+            w: imgWidth + borderWidth,
+            h: imgHeight + borderWidth,
+            fill: { color: '000000' },
+            line: { color: '000000', width: 1 }
+          });
+          
           slideObj.addShape(pptx.ShapeType.rect, {
             x: x,
             y: y,
             w: imgWidth,
             h: imgHeight,
             fill: { color: 'F7F7F7' },
-            line: { color: 'CCCCCC' }
+            line: { color: 'CCCCCC', width: 1 }
           });
           
           slideObj.addText('لا توجد صورة', {
@@ -1125,15 +1181,15 @@
       const gov = customerData.custGov || 'غير محدد';
       const notes = customerData.notes || '';
       
-      // إضافة الجدول مع التنسيق الجديد - Dark Blue للصف الأول
+      // إضافة الجدول
       const rows = [
         [
           { 
             text: 'Merch Code', 
             options: { 
               bold: true, 
-              fill: { color: '1F4E79' },  // Dark Blue
-              color: 'FFFFFF',             // White text
+              fill: { color: '1F4E79' },
+              color: 'FFFFFF',
               align: 'center'
             } 
           },
@@ -1205,7 +1261,7 @@
       });
     });
 
-    // استخدام نافذة مخصصة للحفظ
+    // نافذة الحفظ
     const fileNameModal = document.createElement('div');
     fileNameModal.className = 'modal';
     fileNameModal.innerHTML = `
@@ -1224,7 +1280,6 @@
     const fileNameInput = document.getElementById('fileNameInput');
     fileNameInput.select();
     
-    // إضافة event listeners للأزرار
     document.getElementById('cancelSaveBtn').addEventListener('click', () => {
       document.body.removeChild(fileNameModal);
       showToast('تم إلغاء الحفظ', 'info');
@@ -1234,24 +1289,32 @@
       const fileName = fileNameInput.value.trim() || 'presentation';
       document.body.removeChild(fileNameModal);
       
-      await pptx.writeFile({ fileName: `${fileName}.pptx` });
-      hasUnsavedChanges = false;
-      showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
+      try {
+        await pptx.writeFile({ fileName: `${fileName}.pptx` });
+        hasUnsavedChanges = false;
+        showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
+      } catch (saveError) {
+        console.error('خطأ في الحفظ:', saveError);
+        showToast('فشل في حفظ الملف', 'error');
+      }
     });
     
-    // السماح بالضغط على Enter للحفظ
     fileNameInput.addEventListener('keypress', async (e) => {
       if (e.key === 'Enter') {
         const fileName = fileNameInput.value.trim() || 'presentation';
         document.body.removeChild(fileNameModal);
         
-        await pptx.writeFile({ fileName: `${fileName}.pptx` });
-        hasUnsavedChanges = false;
-        showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
+        try {
+          await pptx.writeFile({ fileName: `${fileName}.pptx` });
+          hasUnsavedChanges = false;
+          showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
+        } catch (saveError) {
+          console.error('خطأ في الحفظ:', saveError);
+          showToast('فشل في حفظ الملف', 'error');
+        }
       }
     });
     
-    // إغلاق النافذة عند النقر خارجها
     fileNameModal.addEventListener('click', (e) => {
       if (e.target === fileNameModal) {
         document.body.removeChild(fileNameModal);
@@ -1260,7 +1323,7 @@
     });
     
   } catch (error) {
-    console.error(error);
+    console.error('خطأ رئيسي في إنشاء العرض:', error);
     showToast('فشل في إنشاء العرض التقديمي', 'error');
   }
 });
