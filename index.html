@@ -263,6 +263,66 @@
       border: 1px solid #c8e6c9;
       font-size: 12px;
     }
+
+    .template-selector {
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .template-selector select {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      width: 100%;
+    }
+
+    .template-preview {
+      margin-top: 10px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 1px solid #e9ecef;
+      text-align: center;
+    }
+
+    .template-preview h4 {
+      margin: 0 0 10px 0;
+      color: #333;
+    }
+
+    .template-preview .preview-box {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      border: 2px solid #dee2e6;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .template-preview .preview-header {
+      font-size: 24px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    .template-preview .preview-subheader {
+      font-size: 18px;
+      color: #0b71eb;
+      margin-top: 5px;
+    }
+
+    .template-preview .preview-footer {
+      text-align: left;
+      font-size: 14px;
+      color: #666;
+      margin-top: 10px;
+    }
     
     @media (max-width: 768px) {
       .placeholders {
@@ -300,6 +360,26 @@
       <strong>مصدر البيانات:</strong> GitHub
       <div style="margin-top: 5px; font-size: 11px; color: #666;">
         يتم تحميل البيانات من ملف على GitHub
+      </div>
+    </div>
+
+    <div class="template-selector">
+      <label for="templateSelect"><strong>اختر قالب العرض:</strong></label>
+      <select id="templateSelect">
+        <option value="mena">MENA FIT-GROW (القالب الأساسي)</option>
+        <option value="modern">مودرن</option>
+        <option value="classic">كلاسيك</option>
+      </select>
+      
+      <div class="template-preview">
+        <h4>معاينة القالب</h4>
+        <div class="preview-box">
+          <div>
+            <div class="preview-header">MENA</div>
+            <div class="preview-subheader">FIT-GROW</div>
+          </div>
+          <div class="preview-footer">1</div>
+        </div>
       </div>
     </div>
 
@@ -363,6 +443,7 @@
     const slidesListEl = document.getElementById('slidesList');
     const hiddenInput = document.getElementById('hiddenFileInput');
     const toast = document.getElementById('toast');
+    const templateSelect = document.getElementById('templateSelect');
     let pendingIdx = 0;
 
     // وظيفة لعرض الرسائل
@@ -463,11 +544,6 @@
         
         if (excelData.length > 0) {
           showToast(`تم تحميل ${excelData.length} سجل من بيانات العملاء`, 'success');
-          // اختبار: حاول البحث عن أول كود في البيانات
-          setTimeout(() => {
-            const testCode = excelData[0]["Merch Code"];
-            console.log('جرب استخدام الكود:', testCode);
-          }, 1000);
         } else {
           showToast('تم تحميل الملف ولكن لم يتم العثور على بيانات', 'warning');
         }
@@ -495,15 +571,6 @@
             "Customer Type": "Daimond",
             "Gov.": "Giza",
             "Notes": ""
-          },
-          {
-            "Merch Code": "00001246",
-            "Acc-Code": "002001695", 
-            "Customer Name": "Oba CSibe",
-            "Customer Address": "si eensigall Oldguall GLb 319 jibe",
-            "Customer Type": "Daimond",
-            "Gov.": "Giza",
-            "Notes": ""
           }
         ];
         
@@ -511,21 +578,72 @@
       }
     }
 
+    // تطبيق قالب MENA FIT-GROW على السلايد
+    function applyMenaTemplate(slideObj, slideIndex, totalSlides) {
+      // إضافة شعار MENA FIT-GROW في الأعلى
+      slideObj.addText('MENA', {
+        x: 0.5,
+        y: 0.2,
+        w: 3,
+        h: 0.5,
+        fontSize: 24,
+        bold: true,
+        color: '2C3E50'
+      });
+      
+      slideObj.addText('FIT-GROW', {
+        x: 0.5,
+        y: 0.6,
+        w: 3,
+        h: 0.4,
+        fontSize: 18,
+        bold: true,
+        color: '0B71EB'
+      });
+      
+      // إضافة ترقيم السلايدات في أسفل اليسار
+      slideObj.addText(`${slideIndex + 1}`, {
+        x: 0.3,
+        y: 6.8,
+        w: 0.5,
+        h: 0.3,
+        fontSize: 14,
+        color: '666666'
+      });
+    }
+
+    // تطبيق قالب مودرن
+    function applyModernTemplate(slideObj, slideIndex, totalSlides) {
+      slideObj.addText(`السلايد ${slideIndex + 1}`, {
+        x: 0.5,
+        y: 0.2,
+        w: 3,
+        h: 0.5,
+        fontSize: 20,
+        bold: true,
+        color: '0B71EB'
+      });
+    }
+
+    // تطبيق قالب كلاسيك
+    function applyClassicTemplate(slideObj, slideIndex, totalSlides) {
+      slideObj.addText(`Slide ${slideIndex + 1}`, {
+        x: 11,
+        y: 0.2,
+        w: 1.5,
+        h: 0.3,
+        fontSize: 14,
+        color: '333333',
+        align: 'right'
+      });
+    }
+
     // تحميل البيانات عند بدء التشغيل
     loadSheetData();
 
-    // إضافة للتحقق - إظهار عدد البيانات المحملة
-    setTimeout(() => {
-      console.log('عدد سجلات البيانات المحملة:', excelData.length);
-      if (excelData.length > 0) {
-        console.log('أمثلة على البيانات:', excelData.slice(0, 3));
-      }
-    }, 2000);
-        
     // تعبئة البيانات عند كتابة Merch Code
     document.getElementById('merchCode').addEventListener('input', () => {
       const code = document.getElementById('merchCode').value.trim();
-      console.log('بحث عن الكود:', code, 'في', excelData.length, 'سجل');
       
       // إذا كان الحقل فارغ، امسح باقي الحقول
       if (code === '') {
@@ -541,7 +659,6 @@
       // البحث في البيانات
       const match = excelData.find(item => {
         const merchCode = String(item['Merch Code'] || '').trim();
-        console.log('مقارنة:', merchCode, 'مع', code);
         
         // محاولات مطابقة مختلفة
         if (merchCode === code) return true;
@@ -553,7 +670,6 @@
       });
 
       if (match) {
-        console.log('تم العثور على:', match);
         document.getElementById('accCode').value = match['Acc-Code'] || '';
         document.getElementById('custName').value = match['Customer Name'] || '';
         document.getElementById('custAddress').value = match['Customer Address'] || '';
@@ -562,7 +678,7 @@
         document.getElementById('notes').value = match['Notes'] || '';
         showToast('تم تحميل بيانات العميل', 'success');
       } else {
-        // مسح الحقول إذا لم يتم العثور على التاجر
+        // مسح الحقول إذا لم يتم العثور على العميل
         document.getElementById('accCode').value = '';
         document.getElementById('custName').value = '';
         document.getElementById('custAddress').value = '';
@@ -571,7 +687,6 @@
         document.getElementById('notes').value = '';
         
         if (code.length > 0) {
-          console.log('لم يتم العثور على:', code);
           showToast('لم يتم العثور على بيانات لهذا الكود', 'error');
         }
       }
@@ -756,12 +871,15 @@
         const gov = document.getElementById('custGov').value || 'غير محدد';
         const notes = document.getElementById('notes').value || 'لا توجد ملاحظات';
 
+        const selectedTemplate = templateSelect.value;
+
         slides.forEach((slide, index) => {
           const slideObj = pptx.addSlide();
           
           const imgWidth = (13.33 - (0.6 * 2) - 0.3 * 2) / 3;
           const imgHeight = 4.5;
           
+          // إضافة الصور
           slide.forEach((data, j) => {
             const x = 0.6 + j * (imgWidth + 0.15);
             const y = 1.0;
@@ -796,6 +914,7 @@
             }
           });
           
+          // إضافة الجدول
           const rows = [
             [
               { text: 'Merch Code', options: { bold: true } },
@@ -818,15 +937,18 @@
             fill: { color: 'F9F9F9' }
           });
           
-          slideObj.addText(`سلايد ${index + 1}`, {
-            x: 0.3,
-            y: 0.2,
-            w: 12.5,
-            h: 0.5,
-            fontSize: 14,
-            bold: true,
-            align: 'center'
-          });
+          // تطبيق القالب المختار
+          switch(selectedTemplate) {
+            case 'mena':
+              applyMenaTemplate(slideObj, index, slides.length);
+              break;
+            case 'modern':
+              applyModernTemplate(slideObj, index, slides.length);
+              break;
+            case 'classic':
+              applyClassicTemplate(slideObj, index, slides.length);
+              break;
+          }
         });
 
         await pptx.writeFile({ fileName: `presentation_${merch || 'unknown'}.pptx` });
