@@ -1061,7 +1061,7 @@
       }
     });
 
-    // رابط التيمبلت من GitHub
+// رابط التيمبلت من GitHub
 const PPT_TEMPLATE_URL = "https://raw.githubusercontent.com/aicordinators-ux/presentation-app/main/presentationtemplate.pptx";
 
 document.getElementById('exportBtn').addEventListener('click', async () => {
@@ -1090,7 +1090,11 @@ document.getElementById('exportBtn').addEventListener('click', async () => {
       
       // إنشاء العرض التقديمي مع التيمبلت
       pptx = new PptxGenJS();
-      await pptx.load(arrayBuffer);
+      
+      // تحميل التيمبلت باستخدام الدالة الصحيحة
+      const templateData = new Uint8Array(arrayBuffer);
+      await pptx.load(templateData);
+      
       templateLoaded = true;
       showToast('تم تحميل القالب بنجاح', 'success');
       
@@ -1101,165 +1105,32 @@ document.getElementById('exportBtn').addEventListener('click', async () => {
       showToast('جارٍ استخدام القالب الافتراضي', 'warning');
     }
 
-    // مسح السلايدات الموجودة في التيمبلت (لو كان محمل)
+    // إذا التيمبلت اتتحمل بنجاح، استخدم السلايد ماستر منه
     if (templateLoaded) {
-      // احتفظ بالسلايد ماستر وامسح السلايدات العادية فقط
-      pptx.slides = [];
-    }
-
-    // إضافة السلايدات الجديدة
-    slides.forEach((slide, index) => {
-      const slideObj = pptx.addSlide();
+      // احصل على أسماء السلايد ماسترز المتاحة
+      const masterSlideNames = Object.keys(pptx.masterSlides);
+      console.log('السلايد ماسترز المتاحة:', masterSlideNames);
       
-      const imgWidth = (13.33 - (0.6 * 2) - 0.3 * 2) / 3;
-      const imgHeight = 4.5;
-      const borderWidth = 0.08;
-      
-      // إضافة الصور مع إطار أسود عريض
-      slide.images.forEach((data, j) => {
-        const x = 0.6 + j * (imgWidth + 0.15);
-        const y = 1.0;
+      // إضافة السلايدات الجديدة باستخدام التيمبلت
+      slides.forEach((slide, index) => {
+        let slideObj;
         
-        if (data) {
-          // إضافة الإطار الأسود
-          slideObj.addShape(pptx.ShapeType.rect, {
-            x: x - borderWidth/2,
-            y: y - borderWidth/2,
-            w: imgWidth + borderWidth,
-            h: imgHeight + borderWidth,
-            fill: { color: '000000' },
-            line: { color: '000000', width: 1 }
-          });
-          
-          // إضافة الصورة
-          slideObj.addImage({
-            data: data,
-            x: x,
-            y: y,
-            w: imgWidth,
-            h: imgHeight
-          });
+        // استخدم أول سلايد ماستر متاح إذا كان فيه
+        if (masterSlideNames.length > 0) {
+          slideObj = pptx.addSlide({ masterName: masterSlideNames[0] });
         } else {
-          // للمربعات الفارغة
-          slideObj.addShape(pptx.ShapeType.rect, {
-            x: x - borderWidth/2,
-            y: y - borderWidth/2,
-            w: imgWidth + borderWidth,
-            h: imgHeight + borderWidth,
-            fill: { color: '000000' },
-            line: { color: '000000', width: 1 }
-          });
-          
-          slideObj.addShape(pptx.ShapeType.rect, {
-            x: x,
-            y: y,
-            w: imgWidth,
-            h: imgHeight,
-            fill: { color: 'F7F7F7' },
-            line: { color: 'CCCCCC', width: 1 }
-          });
-          
-          slideObj.addText('لا توجد صورة', {
-            x: x,
-            y: y + imgHeight / 2 - 0.2,
-            w: imgWidth,
-            h: 0.4,
-            align: 'center',
-            fontSize: 10,
-            color: '888888'
-          });
+          slideObj = pptx.addSlide();
         }
+        
+        addSlideContent(slideObj, slide);
       });
-      
-      // استخدام بيانات العميل المخزنة في السلايد
-      const customerData = slide.customerData;
-      const merch = customerData.merchCode || 'غير محدد';
-      const acc = customerData.accCode || 'غير محدد';
-      const name = customerData.custName || 'غير محدد';
-      const addr = customerData.custAddress || 'غير محدد';
-      const type = customerData.custType || 'غير محدد';
-      const gov = customerData.custGov || 'غير محدد';
-      const notes = customerData.notes || '';
-      
-      // إضافة الجدول
-      const rows = [
-        [
-          { 
-            text: 'Merch Code', 
-            options: { 
-              bold: true, 
-              fill: { color: '1F4E79' },
-              color: 'FFFFFF',
-              align: 'center'
-            } 
-          },
-          { 
-            text: 'Acc-Code', 
-            options: { 
-              bold: true, 
-              fill: { color: '1F4E79' },
-              color: 'FFFFFF',
-              align: 'center'
-            } 
-          },
-          { 
-            text: 'Customer Name', 
-            options: { 
-              bold: true, 
-              fill: { color: '1F4E79' },
-              color: 'FFFFFF',
-              align: 'center'
-            } 
-          },
-          { 
-            text: 'Customer Address', 
-            options: { 
-              bold: true, 
-              fill: { color: '1F4E79' },
-              color: 'FFFFFF',
-              align: 'center'
-            } 
-          },
-          { 
-            text: 'Customer Type', 
-            options: { 
-              bold: true, 
-              fill: { color: '1F4E79' },
-              color: 'FFFFFF',
-              align: 'center'
-            } 
-          },
-          { 
-            text: 'Gov.', 
-            options: { 
-              bold: true, 
-              fill: { color: '1F4E79' },
-              color: 'FFFFFF',
-              align: 'center'
-            } 
-          },
-          { 
-            text: 'Notes', 
-            options: { 
-              bold: true, 
-              fill: { color: '1F4E79' },
-              color: 'FFFFFF',
-              align: 'center'
-            } 
-          }
-        ],
-        [merch, acc, name, addr, type, gov, notes]
-      ];
-      
-      slideObj.addTable(rows, {
-        x: 0.3,
-        y: 6,
-        w: 12.5,
-        fontSize: 10,
-        border: { pt: 1, color: '999999' },
-        fill: { color: 'F9F9F9' }
+    } else {
+      // استخدام القالب الافتراضي
+      slides.forEach((slide, index) => {
+        const slideObj = pptx.addSlide();
+        addSlideContent(slideObj, slide);
       });
-    });
+    }
 
     // نافذة الحفظ
     const fileNameModal = document.createElement('div');
@@ -1328,6 +1199,157 @@ document.getElementById('exportBtn').addEventListener('click', async () => {
   }
 });
 
+// دالة منفصلة لإضافة محتوى السلايد
+function addSlideContent(slideObj, slide) {
+  const imgWidth = (13.33 - (0.6 * 2) - 0.3 * 2) / 3;
+  const imgHeight = 4.5;
+  const borderWidth = 0.08;
+  
+  // إضافة الصور مع إطار أسود عريض
+  slide.images.forEach((data, j) => {
+    const x = 0.6 + j * (imgWidth + 0.15);
+    const y = 1.0;
+    
+    if (data) {
+      // إضافة الإطار الأسود
+      slideObj.addShape(pptx.ShapeType.rect, {
+        x: x - borderWidth/2,
+        y: y - borderWidth/2,
+        w: imgWidth + borderWidth,
+        h: imgHeight + borderWidth,
+        fill: { color: '000000' },
+        line: { color: '000000', width: 1 }
+      });
+      
+      // إضافة الصورة
+      slideObj.addImage({
+        data: data,
+        x: x,
+        y: y,
+        w: imgWidth,
+        h: imgHeight
+      });
+    } else {
+      // للمربعات الفارغة
+      slideObj.addShape(pptx.ShapeType.rect, {
+        x: x - borderWidth/2,
+        y: y - borderWidth/2,
+        w: imgWidth + borderWidth,
+        h: imgHeight + borderWidth,
+        fill: { color: '000000' },
+        line: { color: '000000', width: 1 }
+      });
+      
+      slideObj.addShape(pptx.ShapeType.rect, {
+        x: x,
+        y: y,
+        w: imgWidth,
+        h: imgHeight,
+        fill: { color: 'F7F7F7' },
+        line: { color: 'CCCCCC', width: 1 }
+      });
+      
+      slideObj.addText('لا توجد صورة', {
+        x: x,
+        y: y + imgHeight / 2 - 0.2,
+        w: imgWidth,
+        h: 0.4,
+        align: 'center',
+        fontSize: 10,
+        color: '888888'
+      });
+    }
+  });
+  
+  // استخدام بيانات العميل المخزنة في السلايد
+  const customerData = slide.customerData;
+  const merch = customerData.merchCode || 'غير محدد';
+  const acc = customerData.accCode || 'غير محدد';
+  const name = customerData.custName || 'غير محدد';
+  const addr = customerData.custAddress || 'غير محدد';
+  const type = customerData.custType || 'غير محدد';
+  const gov = customerData.custGov || 'غير محدد';
+  const notes = customerData.notes || '';
+  
+  // إضافة الجدول
+  const rows = [
+    [
+      { 
+        text: 'Merch Code', 
+        options: { 
+          bold: true, 
+          fill: { color: '1F4E79' },
+          color: 'FFFFFF',
+          align: 'center'
+        } 
+      },
+      { 
+        text: 'Acc-Code', 
+        options: { 
+          bold: true, 
+          fill: { color: '1F4E79' },
+          color: 'FFFFFF',
+          align: 'center'
+        } 
+      },
+      { 
+        text: 'Customer Name', 
+        options: { 
+          bold: true, 
+          fill: { color: '1F4E79' },
+          color: 'FFFFFF',
+          align: 'center'
+        } 
+      },
+      { 
+        text: 'Customer Address', 
+        options: { 
+          bold: true, 
+          fill: { color: '1F4E79' },
+          color: 'FFFFFF',
+          align: 'center'
+        } 
+      },
+      { 
+        text: 'Customer Type', 
+        options: { 
+          bold: true, 
+          fill: { color: '1F4E79' },
+          color: 'FFFFFF',
+          align: 'center'
+        } 
+      },
+      { 
+        text: 'Gov.', 
+        options: { 
+          bold: true, 
+          fill: { color: '1F4E79' },
+          color: 'FFFFFF',
+          align: 'center'
+        } 
+      },
+      { 
+        text: 'Notes', 
+        options: { 
+          bold: true, 
+          fill: { color: '1F4E79' },
+          color: 'FFFFFF',
+          align: 'center'
+        } 
+      }
+    ],
+    [merch, acc, name, addr, type, gov, notes]
+  ];
+  
+  slideObj.addTable(rows, {
+    x: 0.3,
+    y: 6,
+    w: 12.5,
+    fontSize: 10,
+    border: { pt: 1, color: '999999' },
+    fill: { color: 'F9F9F9' }
+  });
+}
     // تحديث البيانات
     document.getElementById('refreshDataBtn').addEventListener('click', () => {
       loadSheetData();
