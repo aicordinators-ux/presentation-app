@@ -263,66 +263,6 @@
       border: 1px solid #c8e6c9;
       font-size: 12px;
     }
-
-    .template-selector {
-      background: #fff;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    }
-
-    .template-selector select {
-      padding: 8px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 14px;
-      width: 100%;
-    }
-
-    .template-preview {
-      margin-top: 10px;
-      padding: 15px;
-      background: #f8f9fa;
-      border-radius: 8px;
-      border: 1px solid #e9ecef;
-      text-align: center;
-    }
-
-    .template-preview h4 {
-      margin: 0 0 10px 0;
-      color: #333;
-    }
-
-    .template-preview .preview-box {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      border: 2px solid #dee2e6;
-      min-height: 120px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .template-preview .preview-header {
-      font-size: 24px;
-      font-weight: bold;
-      color: #2c3e50;
-    }
-
-    .template-preview .preview-subheader {
-      font-size: 18px;
-      color: #0b71eb;
-      margin-top: 5px;
-    }
-
-    .template-preview .preview-footer {
-      text-align: left;
-      font-size: 14px;
-      color: #666;
-      margin-top: 10px;
-    }
     
     @media (max-width: 768px) {
       .placeholders {
@@ -363,30 +303,10 @@
       </div>
     </div>
 
-    <div class="template-selector">
-      <label for="templateSelect"><strong>اختر قالب العرض:</strong></label>
-      <select id="templateSelect">
-        <option value="mena">MENA FIT-GROW (القالب الأساسي)</option>
-        <option value="modern">مودرن</option>
-        <option value="classic">كلاسيك</option>
-      </select>
-      
-      <div class="template-preview">
-        <h4>معاينة القالب</h4>
-        <div class="preview-box">
-          <div>
-            <div class="preview-header">MENA</div>
-            <div class="preview-subheader">FIT-GROW</div>
-          </div>
-          <div class="preview-footer">1</div>
-        </div>
-      </div>
-    </div>
-
     <section class="form-grid">
       <div>
         <label for="merchCode">Merch Code</label>
-        <input type="text" id="merchCode" placeholder="أدخل كود التاجر">
+        <input type="text" id="merchCode" placeholder="أدخل كود العميل">
       </div>
       <div>
         <label for="accCode">Acc-Code</label>
@@ -443,7 +363,6 @@
     const slidesListEl = document.getElementById('slidesList');
     const hiddenInput = document.getElementById('hiddenFileInput');
     const toast = document.getElementById('toast');
-    const templateSelect = document.getElementById('templateSelect');
     let pendingIdx = 0;
 
     // وظيفة لعرض الرسائل
@@ -576,66 +495,6 @@
         
         showToast(`تم تحميل ${excelData.length} سجل تجريبي`, 'success');
       }
-    }
-
-    // تطبيق قالب MENA FIT-GROW على السلايد
-    function applyMenaTemplate(slideObj, slideIndex, totalSlides) {
-      // إضافة شعار MENA FIT-GROW في الأعلى
-      slideObj.addText('MENA', {
-        x: 0.5,
-        y: 0.2,
-        w: 3,
-        h: 0.5,
-        fontSize: 24,
-        bold: true,
-        color: '2C3E50'
-      });
-      
-      slideObj.addText('FIT-GROW', {
-        x: 0.5,
-        y: 0.6,
-        w: 3,
-        h: 0.4,
-        fontSize: 18,
-        bold: true,
-        color: '0B71EB'
-      });
-      
-      // إضافة ترقيم السلايدات في أسفل اليسار
-      slideObj.addText(`${slideIndex + 1}`, {
-        x: 0.3,
-        y: 6.8,
-        w: 0.5,
-        h: 0.3,
-        fontSize: 14,
-        color: '666666'
-      });
-    }
-
-    // تطبيق قالب مودرن
-    function applyModernTemplate(slideObj, slideIndex, totalSlides) {
-      slideObj.addText(`السلايد ${slideIndex + 1}`, {
-        x: 0.5,
-        y: 0.2,
-        w: 3,
-        h: 0.5,
-        fontSize: 20,
-        bold: true,
-        color: '0B71EB'
-      });
-    }
-
-    // تطبيق قالب كلاسيك
-    function applyClassicTemplate(slideObj, slideIndex, totalSlides) {
-      slideObj.addText(`Slide ${slideIndex + 1}`, {
-        x: 11,
-        y: 0.2,
-        w: 1.5,
-        h: 0.3,
-        fontSize: 14,
-        color: '333333',
-        align: 'right'
-      });
     }
 
     // تحميل البيانات عند بدء التشغيل
@@ -871,8 +730,6 @@
         const gov = document.getElementById('custGov').value || 'غير محدد';
         const notes = document.getElementById('notes').value || 'لا توجد ملاحظات';
 
-        const selectedTemplate = templateSelect.value;
-
         slides.forEach((slide, index) => {
           const slideObj = pptx.addSlide();
           
@@ -937,18 +794,16 @@
             fill: { color: 'F9F9F9' }
           });
           
-          // تطبيق القالب المختار
-          switch(selectedTemplate) {
-            case 'mena':
-              applyMenaTemplate(slideObj, index, slides.length);
-              break;
-            case 'modern':
-              applyModernTemplate(slideObj, index, slides.length);
-              break;
-            case 'classic':
-              applyClassicTemplate(slideObj, index, slides.length);
-              break;
-          }
+          // إضافة ترقيم السلايدات فقط (بدون قالب MENA)
+          slideObj.addText(`سلايد ${index + 1}`, {
+            x: 0.3,
+            y: 0.2,
+            w: 12.5,
+            h: 0.5,
+            fontSize: 14,
+            bold: true,
+            align: 'center'
+          });
         });
 
         await pptx.writeFile({ fileName: `presentation_${merch || 'unknown'}.pptx` });
