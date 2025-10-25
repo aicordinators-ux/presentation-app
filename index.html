@@ -85,6 +85,11 @@
       background: rgba(11, 113, 235, 0.05);
     }
     
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
     main {
       margin-top: 12px;
     }
@@ -158,6 +163,11 @@
       font-size: 14px;
       width: 100%;
       box-sizing: border-box;
+    }
+    
+    input[type="text"]:disabled {
+      background-color: #f5f5f5;
+      color: #999;
     }
     
     .form-grid {
@@ -245,6 +255,10 @@
       background: var(--success);
     }
     
+    .toast.warning {
+      background: #ff9800;
+    }
+    
     .modal {
       position: fixed;
       top: 0;
@@ -292,6 +306,57 @@
       font-size: 12px;
     }
     
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      flex-direction: column;
+    }
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 10px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .data-status {
+      background: #fff3cd;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      border: 1px solid #ffeaa7;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .data-status.success {
+      background: #d1edff;
+      border-color: #b3d9ff;
+    }
+    
+    .data-status.error {
+      background: #ffeaea;
+      border-color: #ffcccc;
+    }
+    
     @media (max-width: 768px) {
       .placeholders {
         grid-template-columns: 1fr;
@@ -320,12 +385,18 @@
 </head>
 <body>
   <div class="app">
+    <!-- شريط حالة البيانات -->
+    <div class="data-status" id="dataStatus">
+      <span id="statusText">جاري تحميل بيانات العملاء...</span>
+      <button id="retryLoadBtn" class="ghost" style="display: none; font-size: 12px; padding: 4px 8px;">إعادة المحاولة</button>
+    </div>
+    
     <header>
       <h1>مصمم برزنتيشن — بيانات العملاء</h1>
       <div class="controls">
-        <button id="addSlideBtn">➕ إضافة سلايد لنفس العميل </button>
-        <button id="addSlideForNewCustomerBtn" class="secondary">➕ إضافة سلايد لعميل جديد</button>
-        <button id="exportBtn">📤 تصدير العرض</button>
+        <button id="addSlideBtn" disabled>➕ إضافة سلايد لنفس العميل </button>
+        <button id="addSlideForNewCustomerBtn" class="secondary" disabled>➕ إضافة سلايد لعميل جديد</button>
+        <button id="exportBtn" disabled>📤 تصدير العرض</button>
         <button id="refreshDataBtn" class="ghost">🔄 تحديث البيانات</button>
       </div>
     </header>
@@ -340,7 +411,7 @@
     <section class="form-grid">
       <div>
         <label for="merchCode">Merch Code</label>
-        <input type="text" id="merchCode" placeholder="أدخل كود العميل">
+        <input type="text" id="merchCode" placeholder="جاري تحميل البيانات..." disabled>
       </div>
       <div>
         <label for="accCode">Acc-Code</label>
@@ -364,7 +435,7 @@
       </div>
       <div>
         <label for="notes">Notes</label>
-        <input type="text" id="notes" placeholder="ملاحظات إضافية">
+        <input type="text" id="notes" placeholder="ملاحظات إضافية" disabled>
       </div>
     </section>
 
@@ -381,7 +452,7 @@
     <footer>
       <div class="small">الصور سيتم ضغطها إلى 600px لتقليل الحجم.</div>
       <div>
-        <button id="clearBtn" class="ghost">🗑️ تفريغ السلايدات</button>
+        <button id="clearBtn" class="ghost" disabled>🗑️ تفريغ السلايدات</button>
       </div>
     </footer>
   </div>
@@ -412,6 +483,7 @@
     let pendingIdx = 0;
     let currentCustomerCode = '';
     let hasUnsavedChanges = false;
+    let isDataLoaded = false;
 
     // وظيفة لعرض الرسائل
     function showToast(msg, type = 'info', time = 3000) {
@@ -423,13 +495,47 @@
       }, time);
     }
 
+    // تحديث حالة البيانات
+    function updateDataStatus(status, message) {
+      const dataStatus = document.getElementById('dataStatus');
+      const statusText = document.getElementById('statusText');
+      
+      statusText.textContent = message;
+      dataStatus.className = 'data-status';
+      
+      if (status === 'loading') {
+        dataStatus.classList.add('loading');
+      } else if (status === 'success') {
+        dataStatus.classList.add('success');
+      } else if (status === 'error') {
+        dataStatus.classList.add('error');
+      }
+    }
+
+    // تمكين/تعطيل عناصر الواجهة
+    function toggleUIElements(enabled) {
+      document.getElementById('merchCode').disabled = !enabled;
+      document.getElementById('notes').disabled = !enabled;
+      document.getElementById('addSlideBtn').disabled = !enabled;
+      document.getElementById('addSlideForNewCustomerBtn').disabled = !enabled;
+      document.getElementById('exportBtn').disabled = !enabled;
+      document.getElementById('clearBtn').disabled = !enabled;
+      
+      if (enabled) {
+        document.getElementById('merchCode').placeholder = "أدخل كود العميل";
+      } else {
+        document.getElementById('merchCode').placeholder = "جاري تحميل البيانات...";
+      }
+    }
+
     // رابط البيانات من GitHub
     const GITHUB_EXCEL_URL = "https://raw.githubusercontent.com/aicordinators-ux/presentation-app/main/Customers%202025.xlsx";
 
     // دالة تحميل البيانات الرئيسية
     async function loadSheetData() {
       try {
-        showToast('جاري تحميل بيانات العملاء...', 'info');
+        updateDataStatus('loading', 'جاري تحميل بيانات العملاء...');
+        toggleUIElements(false);
         
         // استخدام CORS proxy لتجاوز مشكلة الـ 403
         const proxyUrl = 'https://api.allorigins.win/raw?url=';
@@ -510,24 +616,47 @@
         console.log('البيانات بعد المعالجة:', excelData);
         
         if (excelData.length > 0) {
+          updateDataStatus('success', `تم تحميل ${excelData.length} سجل من بيانات العملاء`);
           showToast(`تم تحميل ${excelData.length} سجل من بيانات العملاء`, 'success');
+          isDataLoaded = true;
+          toggleUIElements(true);
         } else {
+          updateDataStatus('error', 'تم تحميل الملف ولكن لم يتم العثور على بيانات');
           showToast('تم تحميل الملف ولكن لم يتم العثور على بيانات', 'warning');
+          isDataLoaded = false;
+          toggleUIElements(false);
         }
         
       } catch (err) {
         console.error('خطأ في تحميل بيانات الورقة:', err);
-        showToast('فشل تحميل بيانات العملاء. جاري استخدام بيانات تجريبية...', 'error');
+        updateDataStatus('error', 'فشل تحميل بيانات العملاء');
+        showToast('فشل تحميل بيانات العملاء', 'error');
+        isDataLoaded = false;
+        toggleUIElements(false);
         
-        showToast(`تم تحميل ${excelData.length} سجل تجريبي`, 'success');
+        // إظهار زر إعادة المحاولة
+        document.getElementById('retryLoadBtn').style.display = 'block';
       }
     }
 
     // تحميل البيانات عند بدء التشغيل
-    loadSheetData();
+    window.addEventListener('load', function() {
+      loadSheetData();
+    });
+
+    // إعادة تحميل البيانات عند النقر على زر إعادة المحاولة
+    document.getElementById('retryLoadBtn').addEventListener('click', function() {
+      this.style.display = 'none';
+      loadSheetData();
+    });
 
     // تعبئة البيانات عند كتابة Merch Code
     document.getElementById('merchCode').addEventListener('input', () => {
+      if (!isDataLoaded) {
+        showToast('بيانات العملاء غير جاهزة بعد. يرجى الانتظار...', 'warning');
+        return;
+      }
+      
       const code = document.getElementById('merchCode').value.trim();
       
       // إذا كان الحقل فارغ، امسح باقي الحقول
@@ -790,6 +919,11 @@
 
     // إضافة سلايد للعميل الحالي
     document.getElementById('addSlideBtn').addEventListener('click', () => {
+      if (!isDataLoaded) {
+        showToast('بيانات العملاء غير جاهزة بعد', 'error');
+        return;
+      }
+      
       if (!currentCustomerCode) {
         showToast('يرجى إدخال كود عميل أولاً', 'error');
         return;
@@ -817,6 +951,11 @@
 
     // إضافة سلايد لعميل جديد
     document.getElementById('addSlideForNewCustomerBtn').addEventListener('click', () => {
+      if (!isDataLoaded) {
+        showToast('بيانات العملاء غير جاهزة بعد', 'error');
+        return;
+      }
+      
       const modal = document.createElement('div');
       modal.className = 'modal';
       modal.innerHTML = `
@@ -1078,44 +1217,8 @@
     // التحذير عند محاولة تحديث الصفحة أو إغلاقها
     window.addEventListener('beforeunload', function (e) {
       if (hasUnsavedChanges) {
-        // عرض رسالة تأكيد مخصصة
         e.preventDefault();
         e.returnValue = 'سيتم مسح كل البيانات المدخلة';
-        
-        const refreshModal = document.createElement('div');
-        refreshModal.className = 'modal';
-        refreshModal.innerHTML = `
-          <div class="modal-content">
-            <h3 style="margin-bottom:15px;color:#e53935;">⚠️ تنبيه</h3>
-            <p style="margin-bottom:20px;font-size:14px;line-height:1.5;">سيتم مسح كل البيانات المدخلة والصور إذا قمت بتحديث الصفحة</p>
-            <div class="modal-buttons">
-              <button id="cancelRefreshBtn" style="background:#888;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:14px;">غير موافق</button>
-              <button id="confirmRefreshBtn" style="background:#e53935;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:14px;">موافق</button>
-            </div>
-          </div>
-        `;
-        
-        document.body.appendChild(refreshModal);
-        
-        // إلغاء التحديث
-        document.getElementById('cancelRefreshBtn').addEventListener('click', () => {
-          document.body.removeChild(refreshModal);
-        });
-        
-        // تأكيد التحديث
-        document.getElementById('confirmRefreshBtn').addEventListener('click', () => {
-          document.body.removeChild(refreshModal);
-          hasUnsavedChanges = false;
-          window.removeEventListener('beforeunload', arguments.callee);
-          window.location.reload();
-        });
-        
-        // إغلاق النافذة عند النقر خارجها
-        refreshModal.addEventListener('click', (e) => {
-          if (e.target === refreshModal) {
-            document.body.removeChild(refreshModal);
-          }
-        });
       }
     });
 
