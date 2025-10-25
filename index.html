@@ -794,17 +794,6 @@
             fill: { color: 'F9F9F9' }
           });
           
-          // إضافة ترقيم السلايدات فقط (بدون قالب MENA)
-          slideObj.addText(`سلايد ${index + 1}`, {
-            x: 0.3,
-            y: 0.2,
-            w: 12.5,
-            h: 0.5,
-            fontSize: 14,
-            bold: true,
-            align: 'center'
-          });
-        });
 
         await pptx.writeFile({ fileName: `presentation_${merch || 'unknown'}.pptx` });
         showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
