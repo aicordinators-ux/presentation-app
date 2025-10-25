@@ -14,6 +14,7 @@
       --muted: #666;
       --error: #e53935;
       --success: #43a047;
+      --secondary: #2c8a2c;
     }
     
     html, body {
@@ -47,6 +48,7 @@
     .controls {
       display: flex;
       gap: 8px;
+      flex-wrap: wrap;
     }
     
     button {
@@ -58,10 +60,19 @@
       font-weight: 600;
       cursor: pointer;
       transition: background 0.2s;
+      font-size: 14px;
     }
     
     button:hover {
       background: #095ac5;
+    }
+    
+    button.secondary {
+      background: var(--secondary);
+    }
+    
+    button.secondary:hover {
+      background: #247a24;
     }
     
     button.ghost {
@@ -186,6 +197,7 @@
       cursor: pointer;
       border: 1px solid #eee;
       transition: all 0.2s;
+      font-size: 13px;
     }
     
     .slide-thumb:hover {
@@ -244,7 +256,7 @@
       padding: 20px;
       border-radius: 12px;
       text-align: center;
-      min-width: 240px;
+      min-width: 280px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
     }
     
@@ -261,6 +273,15 @@
       border-radius: 6px;
       margin-top: 10px;
       border: 1px solid #c8e6c9;
+      font-size: 12px;
+    }
+    
+    .customer-info {
+      background: #e8f0fe;
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 10px;
+      border: 1px solid #bbdefb;
       font-size: 12px;
     }
     
@@ -282,6 +303,11 @@
         width: 100%;
         justify-content: space-between;
       }
+      
+      button {
+        padding: 8px 10px;
+        font-size: 13px;
+      }
     }
   </style>
 </head>
@@ -291,12 +317,27 @@
       <h1>مصمم برزنتيشن — بيانات العملاء</h1>
       <div class="controls">
         <button id="addSlideBtn">➕ إضافة سلايد</button>
+        <button id="addSlideForNewCustomerBtn" class="secondary">➕ إضافة سلايد لعميل جديد</button>
         <button id="exportBtn">📤 تصدير العرض</button>
         <button id="refreshDataBtn" class="ghost">🔄 تحديث البيانات</button>
       </div>
     </header>
 
-   <section class="form-grid">
+    <div class="data-source">
+      <strong>مصدر البيانات:</strong> GitHub
+      <div style="margin-top: 5px; font-size: 11px; color: #666;">
+        يتم تحميل البيانات من ملف على GitHub
+      </div>
+    </div>
+
+    <div class="customer-info" id="customerInfo" style="display: none;">
+      <strong>العميل الحالي:</strong> <span id="currentCustomerName">غير محدد</span>
+      <div style="margin-top: 5px; font-size: 11px; color: #666;">
+        كود العميل: <span id="currentCustomerCode">غير محدد</span>
+      </div>
+    </div>
+
+    <section class="form-grid">
       <div>
         <label for="merchCode">Merch Code</label>
         <input type="text" id="merchCode" placeholder="أدخل كود العميل">
@@ -357,6 +398,7 @@
     const hiddenInput = document.getElementById('hiddenFileInput');
     const toast = document.getElementById('toast');
     let pendingIdx = 0;
+    let currentCustomerCode = '';
 
     // وظيفة لعرض الرسائل
     function showToast(msg, type = 'info', time = 3000) {
@@ -499,17 +541,31 @@
       
       // إذا كان الحقل فارغ، امسح باقي الحقول
       if (code === '') {
-        document.getElementById('accCode').value = '';
-        document.getElementById('custName').value = '';
-        document.getElementById('custAddress').value = '';
-        document.getElementById('custType').value = '';
-        document.getElementById('custGov').value = '';
-        document.getElementById('notes').value = '';
+        clearCustomerData();
         return;
       }
 
       // البحث في البيانات
-      const match = excelData.find(item => {
+      const match = findCustomerByCode(code);
+
+      if (match) {
+        fillCustomerData(match);
+        currentCustomerCode = code;
+        updateCustomerInfo(match['Customer Name'], code);
+        showToast('تم تحميل بيانات العميل', 'success');
+      } else {
+        // مسح الحقول إذا لم يتم العثور على العميل
+        clearCustomerData();
+        
+        if (code.length > 0) {
+          showToast('لم يتم العثور على بيانات لهذا الكود', 'error');
+        }
+      }
+    });
+
+    // دالة للبحث عن العميل بالكود
+    function findCustomerByCode(code) {
+      return excelData.find(item => {
         const merchCode = String(item['Merch Code'] || '').trim();
         
         // محاولات مطابقة مختلفة
@@ -520,29 +576,36 @@
         
         return false;
       });
+    }
 
-      if (match) {
-        document.getElementById('accCode').value = match['Acc-Code'] || '';
-        document.getElementById('custName').value = match['Customer Name'] || '';
-        document.getElementById('custAddress').value = match['Customer Address'] || '';
-        document.getElementById('custType').value = match['Customer Type'] || '';
-        document.getElementById('custGov').value = match['Gov.'] || '';
-        document.getElementById('notes').value = match['Notes'] || '';
-        showToast('تم تحميل بيانات العميل', 'success');
-      } else {
-        // مسح الحقول إذا لم يتم العثور على العميل
-        document.getElementById('accCode').value = '';
-        document.getElementById('custName').value = '';
-        document.getElementById('custAddress').value = '';
-        document.getElementById('custType').value = '';
-        document.getElementById('custGov').value = '';
-        document.getElementById('notes').value = '';
-        
-        if (code.length > 0) {
-          showToast('لم يتم العثور على بيانات لهذا الكود', 'error');
-        }
-      }
-    });
+    // دالة لتعبيئة بيانات العميل
+    function fillCustomerData(match) {
+      document.getElementById('accCode').value = match['Acc-Code'] || '';
+      document.getElementById('custName').value = match['Customer Name'] || '';
+      document.getElementById('custAddress').value = match['Customer Address'] || '';
+      document.getElementById('custType').value = match['Customer Type'] || '';
+      document.getElementById('custGov').value = match['Gov.'] || '';
+      document.getElementById('notes').value = match['Notes'] || '';
+    }
+
+    // دالة لمسح بيانات العميل
+    function clearCustomerData() {
+      document.getElementById('accCode').value = '';
+      document.getElementById('custName').value = '';
+      document.getElementById('custAddress').value = '';
+      document.getElementById('custType').value = '';
+      document.getElementById('custGov').value = '';
+      document.getElementById('notes').value = '';
+      currentCustomerCode = '';
+      document.getElementById('customerInfo').style.display = 'none';
+    }
+
+    // دالة لتحديث معلومات العميل المعروضة
+    function updateCustomerInfo(name, code) {
+      document.getElementById('currentCustomerName').textContent = name || 'غير محدد';
+      document.getElementById('currentCustomerCode').textContent = code || 'غير محدد';
+      document.getElementById('customerInfo').style.display = 'block';
+    }
 
     // فتح نافذة اختيار الصورة
     function openImagePicker(idx) {
@@ -682,11 +745,86 @@
       renderSlides();
     }
 
+    // إضافة سلايد للعميل الحالي
     document.getElementById('addSlideBtn').addEventListener('click', () => {
+      if (!currentCustomerCode) {
+        showToast('يرجى إدخال كود عميل أولاً', 'error');
+        return;
+      }
+      
       slides.push([null, null, null]);
       currentIndex = slides.length - 1;
       renderCurrentSlide();
-      showToast('تم إضافة سلايد جديد', 'success');
+      showToast('تم إضافة سلايد جديد للعميل الحالي', 'success');
+    });
+
+    // إضافة سلايد لعميل جديد
+    document.getElementById('addSlideForNewCustomerBtn').addEventListener('click', () => {
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <h3 style="margin-bottom:10px;">إضافة سلايد لعميل جديد</h3>
+          <p style="margin-bottom:15px;font-size:14px;color:#666;">أدخل كود العميل الجديد:</p>
+          <input type="text" id="newCustomerCodeInput" placeholder="أدخل كود العميل" style="padding:8px;width:100%;box-sizing:border-box;border-radius:6px;border:1px solid #ccc;margin-bottom:15px;">
+          <div class="modal-buttons">
+            <button id="cancelNewCustomerBtn" style="background:#888;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">إلغاء</button>
+            <button id="confirmNewCustomerBtn" style="background:#2c8a2c;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">موافق</button>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      const newCustomerCodeInput = document.getElementById('newCustomerCodeInput');
+      newCustomerCodeInput.focus();
+      
+      // إضافة event listeners للأزرار
+      document.getElementById('cancelNewCustomerBtn').addEventListener('click', () => {
+        document.body.removeChild(modal);
+      });
+      
+      document.getElementById('confirmNewCustomerBtn').addEventListener('click', () => {
+        const newCode = newCustomerCodeInput.value.trim();
+        if (!newCode) {
+          showToast('يرجى إدخال كود العميل', 'error');
+          return;
+        }
+        
+        const match = findCustomerByCode(newCode);
+        if (!match) {
+          showToast('لم يتم العثور على بيانات لهذا الكود', 'error');
+          return;
+        }
+        
+        // تعبئة بيانات العميل الجديد
+        document.getElementById('merchCode').value = newCode;
+        fillCustomerData(match);
+        currentCustomerCode = newCode;
+        updateCustomerInfo(match['Customer Name'], newCode);
+        
+        // إضافة سلايد جديد
+        slides.push([null, null, null]);
+        currentIndex = slides.length - 1;
+        renderCurrentSlide();
+        
+        document.body.removeChild(modal);
+        showToast('تم إضافة سلايد جديد للعميل: ' + match['Customer Name'], 'success');
+      });
+      
+      // السماح بالضغط على Enter للتأكيد
+      newCustomerCodeInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          document.getElementById('confirmNewCustomerBtn').click();
+        }
+      });
+      
+      // إغلاق النافذة عند النقر خارجها
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          document.body.removeChild(modal);
+        }
+      });
     });
 
     document.getElementById('clearBtn').addEventListener('click', () => {
@@ -784,7 +922,7 @@
           });
         });
 
-        // استخدام نافذة مخصصة بدلاً من prompt
+        // استخدام نافذة مخصصة للحفظ
         const fileNameModal = document.createElement('div');
         fileNameModal.className = 'modal';
         fileNameModal.innerHTML = `
@@ -840,6 +978,11 @@
         console.error(error);
         showToast('فشل في إنشاء العرض التقديمي', 'error');
       }
+    });
+
+    // تحديث البيانات
+    document.getElementById('refreshDataBtn').addEventListener('click', () => {
+      loadSheetData();
     });
     
     // التهيئة الأولية
