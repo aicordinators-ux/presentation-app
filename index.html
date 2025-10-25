@@ -519,28 +519,6 @@
         console.error('خطأ في تحميل بيانات الورقة:', err);
         showToast('فشل تحميل بيانات العملاء. جاري استخدام بيانات تجريبية...', 'error');
         
-        // بيانات تجريبية للطوارئ
-        excelData = [
-          {
-            "Merch Code": "00001243",
-            "Acc-Code": "002001690",
-            "Customer Name": "Sila",
-            "Customer Address": "Ba ~ 5all 53) opal pest oe Ete Slab Sales Cals",
-            "Customer Type": "Daimond", 
-            "Gov.": "Giza",
-            "Notes": ""
-          },
-          {
-            "Merch Code": "00001245",
-            "Acc-Code": "002004141", 
-            "Customer Name": "Drara co",
-            "Customer Address": "Seal = Gall aud — Gates 57",
-            "Customer Type": "Daimond",
-            "Gov.": "Giza",
-            "Notes": ""
-          }
-        ];
-        
         showToast(`تم تحميل ${excelData.length} سجل تجريبي`, 'success');
       }
     }
