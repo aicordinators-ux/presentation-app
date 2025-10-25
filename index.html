@@ -1082,16 +1082,12 @@
         
         slides.forEach((slide, index) => {
   const slideObj = pptx.addSlide();
-  
-  // 🔹 إضافة خلفية التمبليت من GitHub هنا
-  slideObj.addImage({
-    x: 0,
-    y: 0,
-    w: slideWidth,
-    h: slideHeight,
-    url: "https://raw.githubusercontent.com/aicordinators-ux/presentation-app/main/Template.jpg"
-  });
-  
+
+  // ✅ إضافة الخلفية من الصورة المرفوعة على GitHub
+  slideObj.background = {
+    path: 'https://raw.githubusercontent.com/aicordinators-ux/presentation-app/main/Template.jpg'
+  };
+          
   // 🔹 (اختياري) تقدر تشيل السطر اللي بيضيف خلفية بيضاء لأنه مش محتاج دلوقتي
   // slideObj.background = { color: 'FFFFFF' };
   
