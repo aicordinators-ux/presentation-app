@@ -722,6 +722,10 @@
         const pptx = new PptxGenJS();
         pptx.layout = 'LAYOUT_WIDE';
         
+        // تحميل القالب من GitHub
+        const templateResponse = await fetch('https://raw.githubusercontent.com/aicordinators-ux/presentation-app/a394109d255859055f56114f4486580330f26f7f/presentationtemplate.pptx');
+        const templateBuffer = await templateResponse.arrayBuffer();
+        
         const merch = document.getElementById('merchCode').value || 'غير محدد';
         const acc = document.getElementById('accCode').value || 'غير محدد';
         const name = document.getElementById('custName').value || 'غير محدد';
@@ -793,7 +797,7 @@
             border: { pt: 1, color: '999999' },
             fill: { color: 'F9F9F9' }
           });
-          
+        });
 
         await pptx.writeFile({ fileName: `presentation_${merch || 'unknown'}.pptx` });
         showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
