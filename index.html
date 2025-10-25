@@ -565,8 +565,6 @@
         fillCustomerData(match);
         currentCustomerCode = code;
         updateCustomerInfo(match['Customer Name'], code);
-        // حفظ بيانات العميل في السلايد الحالي تلقائياً
-        saveCurrentCustomerDataToSlide();
         showToast('تم تحميل بيانات العميل', 'success');
       } else {
         // مسح الحقول إذا لم يتم العثور على العميل
@@ -633,7 +631,6 @@
         custGov: document.getElementById('custGov').value || '',
         notes: document.getElementById('notes').value || ''
       };
-      hasUnsavedChanges = true;
     }
 
     // دالة لتحميل بيانات العميل من السلايد الحالي
@@ -948,9 +945,6 @@
     });
 
     document.getElementById('exportBtn').addEventListener('click', async () => {
-      // حفظ بيانات العميل الحالي في السلايد الحالي قبل التصدير
-      saveCurrentCustomerDataToSlide();
-      
       const hasImages = slides.some(slide => slide.images.some(img => img !== null));
       if (!hasImages) {
         showToast('يرجى إضافة صورة واحدة على الأقل', 'error');
@@ -1014,16 +1008,16 @@
           const gov = customerData.custGov || 'غير محدد';
           const notes = customerData.notes || '';
           
-          // إضافة الجدول مع Header باللون الأزرق الداكن والنص الأبيض
+          // إضافة الجدول
           const rows = [
             [
-              { text: 'Merch Code', options: { bold: true, fill: { color: '000080' }, color: 'FFFFFF' } },
-              { text: 'Acc-Code', options: { bold: true, fill: { color: '000080' }, color: 'FFFFFF' } },
-              { text: 'Customer Name', options: { bold: true, fill: { color: '000080' }, color: 'FFFFFF' } },
-              { text: 'Customer Address', options: { bold: true, fill: { color: '000080' }, color: 'FFFFFF' } },
-              { text: 'Customer Type', options: { bold: true, fill: { color: '000080' }, color: 'FFFFFF' } },
-              { text: 'Gov.', options: { bold: true, fill: { color: '000080' }, color: 'FFFFFF' } },
-              { text: 'Notes', options: { bold: true, fill: { color: '000080' }, color: 'FFFFFF' } }
+              { text: 'Merch Code', options: { bold: true } },
+              { text: 'Acc-Code', options: { bold: true } },
+              { text: 'Customer Name', options: { bold: true } },
+              { text: 'Customer Address', options: { bold: true } },
+              { text: 'Customer Type', options: { bold: true } },
+              { text: 'Gov.', options: { bold: true } },
+              { text: 'Notes', options: { bold: true } }
             ],
             [merch, acc, name, addr, type, gov, notes]
           ];
@@ -1131,4 +1125,32 @@
         });
         
         // تأكيد التحديث
-        document.getElementById('confirmRefreshBtn').add
+        document.getElementById('confirmRefreshBtn').addEventListener('click', () => {
+          document.body.removeChild(refreshModal);
+          hasUnsavedChanges = false;
+          window.removeEventListener('beforeunload', arguments.callee);
+          window.location.reload();
+        });
+        
+        // إغلاق النافذة عند النقر خارجها
+        refreshModal.addEventListener('click', (e) => {
+          if (e.target === refreshModal) {
+            document.body.removeChild(refreshModal);
+          }
+        });
+      }
+    });
+
+    // تتبع التغييرات لتحديد إذا كان هناك بيانات غير محفوظة
+    function trackChanges() {
+      hasUnsavedChanges = true;
+    }
+
+    // إضافة مستمعي الأحداث لتتبع التغييرات
+    document.getElementById('notes').addEventListener('input', trackChanges);
+    
+    // التهيئة الأولية
+    renderCurrentSlide();
+  </script>
+</body>
+</html>
