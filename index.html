@@ -706,101 +706,148 @@
     });
 
     document.getElementById('exportBtn').addEventListener('click', async () => {
-  const hasImages = slides.some(slide => slide.some(img => img !== null));
-  if (!hasImages) {
-    showToast('يرجى إضافة صورة واحدة على الأقل', 'error');
-    return;
-  }
+      const hasImages = slides.some(slide => slide.some(img => img !== null));
+      if (!hasImages) {
+        showToast('يرجى إضافة صورة واحدة على الأقل', 'error');
+        return;
+      }
 
-  try {
-    showToast('جاري إنشاء العرض التقديمي...', 'info');
-    
-    const pptx = new PptxGenJS();
-    pptx.layout = 'LAYOUT_WIDE';
-    
-    const merch = document.getElementById('merchCode').value || 'غير محدد';
-    const acc = document.getElementById('accCode').value || 'غير محدد';
-    const name = document.getElementById('custName').value || 'غير محدد';
-    const addr = document.getElementById('custAddress').value || 'غير محدد';
-    const type = document.getElementById('custType').value || 'غير محدد';
-    const gov = document.getElementById('custGov').value || 'غير محدد';
-    const notes = document.getElementById('notes').value || ''; // تعديل هنا
-
-    slides.forEach((slide, index) => {
-      const slideObj = pptx.addSlide();
-      
-      const imgWidth = (13.33 - (0.6 * 2) - 0.3 * 2) / 3;
-      const imgHeight = 4.5;
-      
-      // إضافة الصور
-      slide.forEach((data, j) => {
-        const x = 0.6 + j * (imgWidth + 0.15);
-        const y = 1.0;
+      try {
+        showToast('جاري إنشاء العرض التقديمي...', 'info');
         
-        if (data) {
-          slideObj.addImage({
-            data: data,
-            x: x,
-            y: y,
-            w: imgWidth,
-            h: imgHeight
-          });
-        } else {
-          slideObj.addShape(pptx.ShapeType.rect, {
-            x: x,
-            y: y,
-            w: imgWidth,
-            h: imgHeight,
-            fill: { color: 'F7F7F7' },
-            line: { color: 'CCCCCC' }
+        const pptx = new PptxGenJS();
+        pptx.layout = 'LAYOUT_WIDE';
+        
+        const merch = document.getElementById('merchCode').value || 'غير محدد';
+        const acc = document.getElementById('accCode').value || 'غير محدد';
+        const name = document.getElementById('custName').value || 'غير محدد';
+        const addr = document.getElementById('custAddress').value || 'غير محدد';
+        const type = document.getElementById('custType').value || 'غير محدد';
+        const gov = document.getElementById('custGov').value || 'غير محدد';
+        const notes = document.getElementById('notes').value || '';
+
+        slides.forEach((slide, index) => {
+          const slideObj = pptx.addSlide();
+          
+          const imgWidth = (13.33 - (0.6 * 2) - 0.3 * 2) / 3;
+          const imgHeight = 4.5;
+          
+          // إضافة الصور
+          slide.forEach((data, j) => {
+            const x = 0.6 + j * (imgWidth + 0.15);
+            const y = 1.0;
+            
+            if (data) {
+              slideObj.addImage({
+                data: data,
+                x: x,
+                y: y,
+                w: imgWidth,
+                h: imgHeight
+              });
+            } else {
+              slideObj.addShape(pptx.ShapeType.rect, {
+                x: x,
+                y: y,
+                w: imgWidth,
+                h: imgHeight,
+                fill: { color: 'F7F7F7' },
+                line: { color: 'CCCCCC' }
+              });
+              
+              slideObj.addText('لا توجد صورة', {
+                x: x,
+                y: y + imgHeight / 2 - 0.2,
+                w: imgWidth,
+                h: 0.4,
+                align: 'center',
+                fontSize: 10,
+                color: '888888'
+              });
+            }
           });
           
-          slideObj.addText('لا توجد صورة', {
-            x: x,
-            y: y + imgHeight / 2 - 0.2,
-            w: imgWidth,
-            h: 0.4,
-            align: 'center',
+          // إضافة الجدول
+          const rows = [
+            [
+              { text: 'Merch Code', options: { bold: true } },
+              { text: 'Acc-Code', options: { bold: true } },
+              { text: 'Customer Name', options: { bold: true } },
+              { text: 'Customer Address', options: { bold: true } },
+              { text: 'Customer Type', options: { bold: true } },
+              { text: 'Gov.', options: { bold: true } },
+              { text: 'Notes', options: { bold: true } }
+            ],
+            [merch, acc, name, addr, type, gov, notes]
+          ];
+          
+          slideObj.addTable(rows, {
+            x: 0.3,
+            y: 6,
+            w: 12.5,
             fontSize: 10,
-            color: '888888'
+            border: { pt: 1, color: '999999' },
+            fill: { color: 'F9F9F9' }
           });
-        }
-      });
-      
-      // إضافة الجدول
-      const rows = [
-        [
-          { text: 'Merch Code', options: { bold: true } },
-          { text: 'Acc-Code', options: { bold: true } },
-          { text: 'Customer Name', options: { bold: true } },
-          { text: 'Customer Address', options: { bold: true } },
-          { text: 'Customer Type', options: { bold: true } },
-          { text: 'Gov.', options: { bold: true } },
-          { text: 'Notes', options: { bold: true } }
-        ],
-        [merch, acc, name, addr, type, gov, notes] // تعديل هنا
-      ];
-      
-      slideObj.addTable(rows, {
-        x: 0.3,
-        y: 6,
-        w: 12.5,
-        fontSize: 10,
-        border: { pt: 1, color: '999999' },
-        fill: { color: 'F9F9F9' }
-      });
-    });
+        });
 
-    // طلب اسم الملف من المستخدم (التعديل هنا)
-    const fileName = prompt('حفظ العرض التقديمي بإسم:', `presentation_${merch || 'unknown'}`) || `presentation_${merch || 'unknown'}`;
-    await pptx.writeFile({ fileName: `${fileName}.pptx` });
-    
-    showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
-  } catch (error) {
-    console.error(error);
-    showToast('فشل في إنشاء العرض التقديمي', 'error');
-  }
-});
+        // استخدام نافذة مخصصة بدلاً من prompt
+        const fileNameModal = document.createElement('div');
+        fileNameModal.className = 'modal';
+        fileNameModal.innerHTML = `
+          <div class="modal-content">
+            <h3 style="margin-bottom:10px;">حفظ العرض التقديمي بإسم:</h3>
+            <input type="text" id="fileNameInput" value="presentation_${merch || 'unknown'}" style="padding:8px;width:100%;box-sizing:border-box;border-radius:6px;border:1px solid #ccc;margin-bottom:15px;">
+            <div class="modal-buttons">
+              <button id="cancelSaveBtn" style="background:#888;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">إلغاء</button>
+              <button id="confirmSaveBtn" style="background:#0b71eb;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">موافق</button>
+            </div>
+          </div>
+        `;
+        
+        document.body.appendChild(fileNameModal);
+        
+        const fileNameInput = document.getElementById('fileNameInput');
+        fileNameInput.select();
+        
+        // إضافة event listeners للأزرار
+        document.getElementById('cancelSaveBtn').addEventListener('click', () => {
+          document.body.removeChild(fileNameModal);
+          showToast('تم إلغاء الحفظ', 'info');
+        });
+        
+        document.getElementById('confirmSaveBtn').addEventListener('click', async () => {
+          const fileName = fileNameInput.value.trim() || `presentation_${merch || 'unknown'}`;
+          document.body.removeChild(fileNameModal);
+          
+          await pptx.writeFile({ fileName: `${fileName}.pptx` });
+          showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
+        });
+        
+        // السماح بالضغط على Enter للحفظ
+        fileNameInput.addEventListener('keypress', async (e) => {
+          if (e.key === 'Enter') {
+            const fileName = fileNameInput.value.trim() || `presentation_${merch || 'unknown'}`;
+            document.body.removeChild(fileNameModal);
+            
+            await pptx.writeFile({ fileName: `${fileName}.pptx` });
+            showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
+          }
+        });
+        
+        // إغلاق النافذة عند النقر خارجها
+        fileNameModal.addEventListener('click', (e) => {
+          if (e.target === fileNameModal) {
+            document.body.removeChild(fileNameModal);
+            showToast('تم إلغاء الحفظ', 'info');
+          }
+        });
+        
+      } catch (error) {
+        console.error(error);
+        showToast('فشل في إنشاء العرض التقديمي', 'error');
+      }
+    });
     
     // التهيئة الأولية
     renderCurrentSlide();
