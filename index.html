@@ -705,108 +705,103 @@
       }
     });
 
-    document.getElementById('refreshDataBtn').addEventListener('click', () => {
-      loadSheetData();
-    });
-
     document.getElementById('exportBtn').addEventListener('click', async () => {
-      const hasImages = slides.some(slide => slide.some(img => img !== null));
-      if (!hasImages) {
-        showToast('يرجى إضافة صورة واحدة على الأقل', 'error');
-        return;
-      }
+  const hasImages = slides.some(slide => slide.some(img => img !== null));
+  if (!hasImages) {
+    showToast('يرجى إضافة صورة واحدة على الأقل', 'error');
+    return;
+  }
 
-      try {
-        showToast('جاري إنشاء العرض التقديمي...', 'info');
-        
-        const pptx = new PptxGenJS();
-        pptx.layout = 'LAYOUT_WIDE';
-        
-        // تحميل القالب من GitHub
-        const templateResponse = await fetch('https://raw.githubusercontent.com/aicordinators-ux/presentation-app/a394109d255859055f56114f4486580330f26f7f/presentationtemplate.pptx');
-        const templateBuffer = await templateResponse.arrayBuffer();
-        
-        const merch = document.getElementById('merchCode').value || 'غير محدد';
-        const acc = document.getElementById('accCode').value || 'غير محدد';
-        const name = document.getElementById('custName').value || 'غير محدد';
-        const addr = document.getElementById('custAddress').value || 'غير محدد';
-        const type = document.getElementById('custType').value || 'غير محدد';
-        const gov = document.getElementById('custGov').value || 'غير محدد';
-        const notes = document.getElementById('notes').value || 'لا توجد ملاحظات';
+  try {
+    showToast('جاري إنشاء العرض التقديمي...', 'info');
+    
+    const pptx = new PptxGenJS();
+    pptx.layout = 'LAYOUT_WIDE';
+    
+    const merch = document.getElementById('merchCode').value || 'غير محدد';
+    const acc = document.getElementById('accCode').value || 'غير محدد';
+    const name = document.getElementById('custName').value || 'غير محدد';
+    const addr = document.getElementById('custAddress').value || 'غير محدد';
+    const type = document.getElementById('custType').value || 'غير محدد';
+    const gov = document.getElementById('custGov').value || 'غير محدد';
+    const notes = document.getElementById('notes').value || ''; // تعديل هنا
 
-        slides.forEach((slide, index) => {
-          const slideObj = pptx.addSlide();
-          
-          const imgWidth = (13.33 - (0.6 * 2) - 0.3 * 2) / 3;
-          const imgHeight = 4.5;
-          
-          // إضافة الصور
-          slide.forEach((data, j) => {
-            const x = 0.6 + j * (imgWidth + 0.15);
-            const y = 1.0;
-            
-            if (data) {
-              slideObj.addImage({
-                data: data,
-                x: x,
-                y: y,
-                w: imgWidth,
-                h: imgHeight
-              });
-            } else {
-              slideObj.addShape(pptx.ShapeType.rect, {
-                x: x,
-                y: y,
-                w: imgWidth,
-                h: imgHeight,
-                fill: { color: 'F7F7F7' },
-                line: { color: 'CCCCCC' }
-              });
-              
-              slideObj.addText('لا توجد صورة', {
-                x: x,
-                y: y + imgHeight / 2 - 0.2,
-                w: imgWidth,
-                h: 0.4,
-                align: 'center',
-                fontSize: 10,
-                color: '888888'
-              });
-            }
+    slides.forEach((slide, index) => {
+      const slideObj = pptx.addSlide();
+      
+      const imgWidth = (13.33 - (0.6 * 2) - 0.3 * 2) / 3;
+      const imgHeight = 4.5;
+      
+      // إضافة الصور
+      slide.forEach((data, j) => {
+        const x = 0.6 + j * (imgWidth + 0.15);
+        const y = 1.0;
+        
+        if (data) {
+          slideObj.addImage({
+            data: data,
+            x: x,
+            y: y,
+            w: imgWidth,
+            h: imgHeight
+          });
+        } else {
+          slideObj.addShape(pptx.ShapeType.rect, {
+            x: x,
+            y: y,
+            w: imgWidth,
+            h: imgHeight,
+            fill: { color: 'F7F7F7' },
+            line: { color: 'CCCCCC' }
           });
           
-          // إضافة الجدول
-          const rows = [
-            [
-              { text: 'Merch Code', options: { bold: true } },
-              { text: 'Acc-Code', options: { bold: true } },
-              { text: 'Customer Name', options: { bold: true } },
-              { text: 'Customer Address', options: { bold: true } },
-              { text: 'Customer Type', options: { bold: true } },
-              { text: 'Gov.', options: { bold: true } },
-              { text: 'Notes', options: { bold: true } }
-            ],
-            [merch, acc, name, addr, type, gov, notes]
-          ];
-          
-          slideObj.addTable(rows, {
-            x: 0.3,
-            y: 6,
-            w: 12.5,
+          slideObj.addText('لا توجد صورة', {
+            x: x,
+            y: y + imgHeight / 2 - 0.2,
+            w: imgWidth,
+            h: 0.4,
+            align: 'center',
             fontSize: 10,
-            border: { pt: 1, color: '999999' },
-            fill: { color: 'F9F9F9' }
+            color: '888888'
           });
-        });
-
-        await pptx.writeFile({ fileName: `presentation_${merch || 'unknown'}.pptx` });
-        showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
-      } catch (error) {
-        console.error(error);
-        showToast('فشل في إنشاء العرض التقديمي', 'error');
-      }
+        }
+      });
+      
+      // إضافة الجدول
+      const rows = [
+        [
+          { text: 'Merch Code', options: { bold: true } },
+          { text: 'Acc-Code', options: { bold: true } },
+          { text: 'Customer Name', options: { bold: true } },
+          { text: 'Customer Address', options: { bold: true } },
+          { text: 'Customer Type', options: { bold: true } },
+          { text: 'Gov.', options: { bold: true } },
+          { text: 'Notes', options: { bold: true } }
+        ],
+        [merch, acc, name, addr, type, gov, notes] // تعديل هنا
+      ];
+      
+      slideObj.addTable(rows, {
+        x: 0.3,
+        y: 6,
+        w: 12.5,
+        fontSize: 10,
+        border: { pt: 1, color: '999999' },
+        fill: { color: 'F9F9F9' }
+      });
     });
 
+    // طلب اسم الملف من المستخدم (التعديل هنا)
+    const fileName = prompt('حفظ العرض التقديمي بإسم:', `presentation_${merch || 'unknown'}`) || `presentation_${merch || 'unknown'}`;
+    await pptx.writeFile({ fileName: `${fileName}.pptx` });
+    
+    showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
+  } catch (error) {
+    console.error(error);
+    showToast('فشل في إنشاء العرض التقديمي', 'error');
+  }
+});
+    
     // التهيئة الأولية
     renderCurrentSlide();
   </script>
