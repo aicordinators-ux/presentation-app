@@ -1081,14 +1081,24 @@
         const slideHeight = 7.5;
         
         slides.forEach((slide, index) => {
-          const slideObj = pptx.addSlide();
+  const slideObj = pptx.addSlide();
+  
+  // 🔹 إضافة خلفية التمبليت من GitHub هنا
+  slideObj.addImage({
+    x: 0,
+    y: 0,
+    w: slideWidth,
+    h: slideHeight,
+    url: "https://raw.githubusercontent.com/aicordinators-ux/presentation-app/main/Template.jpg"
+  });
+  
+  // 🔹 (اختياري) تقدر تشيل السطر اللي بيضيف خلفية بيضاء لأنه مش محتاج دلوقتي
+  // slideObj.background = { color: 'FFFFFF' };
+  
+  const imgWidth = (slideWidth - (0.6 * 2) - 0.3 * 2) / 3;
+  const imgHeight = 4.5;
+  const borderWidth = 0.1; // إطار عريض
           
-          // إضافة خلفية احترافية
-          slideObj.background = { color: 'FFFFFF' };
-          
-          const imgWidth = (slideWidth - (0.6 * 2) - 0.3 * 2) / 3;
-          const imgHeight = 4.5;
-          const borderWidth = 0.1; // إطار عريض
           
           // ⬇️⬇️⬇️ لا يوجد عنوان للسلايد هنا ⬇️⬇️⬇️
           
