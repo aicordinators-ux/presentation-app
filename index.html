@@ -1244,23 +1244,18 @@
             ]
           ];
           
-        let slideHeight = 7.5; // ارتفاع السلايد الافتراضي بالبوصة
-let rowHeight = 0.3;   // تقدير ارتفاع الصف الواحد
-let marginBottom = 0.7; // المسافة من أسفل السلايد
-let tableHeight = rows.length * rowHeight; 
-let yPos = slideHeight - tableHeight - marginBottom;
-
-slideObj.addTable(rows, {
-  x: 0.3,
-  y: yPos, // الوضع الديناميكي
-  w: 12.7,
-  colW: [1.5, 1.5, 2.5, 2.5, 1.5, 1.5, 1.7],
-  fontSize: 10,
-  border: { pt: 1, color: '666666' },
-  fill: { color: 'F9F9F9' },
-  align: 'center',
-  valign: 'middle'
-});
+       
+        slideObj.addTable(rows, {
+            x: 0.3,
+            y: 5.8,
+            w: 12.7,
+            colW: [1.5, 1.5, 2.5, 2.5, 1.5, 1.5, 1.7],
+            fontSize: 10,
+            border: { pt: 1, color: '666666' },
+            fill: { color: 'F9F9F9' },
+            align: 'center',
+            valign: 'middle'
+          });
 
                  
         });
