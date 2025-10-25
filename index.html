@@ -411,6 +411,7 @@
     const toast = document.getElementById('toast');
     let pendingIdx = 0;
     let currentCustomerCode = '';
+    let hasUnsavedChanges = false;
 
     // وظيفة لعرض الرسائل
     function showToast(msg, type = 'info', time = 3000) {
@@ -708,6 +709,7 @@
         const dataUrl = await fileToDataURL(file);
         const resized = await resizeDataUrl(dataUrl, MAX_WIDTH, 0.8);
         slides[currentIndex].images[pendingIdx] = resized;
+        hasUnsavedChanges = true;
         renderCurrentSlide();
         showToast('تم إضافة الصورة بنجاح', 'success');
       } catch (error) {
@@ -830,6 +832,7 @@
       });
       
       currentIndex = slides.length - 1;
+      hasUnsavedChanges = true;
       renderCurrentSlide();
       showToast('تم إضافة سلايد جديد للعميل الحالي', 'success');
     });
@@ -897,6 +900,7 @@
         });
         
         currentIndex = slides.length - 1;
+        hasUnsavedChanges = true;
         renderCurrentSlide();
         
         document.body.removeChild(modal);
@@ -934,6 +938,7 @@
         }];
         currentIndex = 0;
         clearCustomerData();
+        hasUnsavedChanges = false;
         renderCurrentSlide();
         showToast('تم حذف جميع السلايدات', 'success');
       }
@@ -1057,6 +1062,7 @@
           document.body.removeChild(fileNameModal);
           
           await pptx.writeFile({ fileName: `${fileName}.pptx` });
+          hasUnsavedChanges = false;
           showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
         });
         
@@ -1067,6 +1073,7 @@
             document.body.removeChild(fileNameModal);
             
             await pptx.writeFile({ fileName: `${fileName}.pptx` });
+            hasUnsavedChanges = false;
             showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
           }
         });
@@ -1089,6 +1096,58 @@
     document.getElementById('refreshDataBtn').addEventListener('click', () => {
       loadSheetData();
     });
+
+    // التحذير عند محاولة تحديث الصفحة أو إغلاقها
+    window.addEventListener('beforeunload', function (e) {
+      if (hasUnsavedChanges) {
+        // عرض رسالة تأكيد مخصصة
+        e.preventDefault();
+        e.returnValue = 'سيتم مسح كل البيانات المدخلة';
+        
+        const refreshModal = document.createElement('div');
+        refreshModal.className = 'modal';
+        refreshModal.innerHTML = `
+          <div class="modal-content">
+            <h3 style="margin-bottom:15px;color:#e53935;">⚠️ تنبيه</h3>
+            <p style="margin-bottom:20px;font-size:14px;line-height:1.5;">سيتم مسح كل البيانات المدخلة والصور إذا قمت بتحديث الصفحة</p>
+            <div class="modal-buttons">
+              <button id="cancelRefreshBtn" style="background:#888;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:14px;">غير موافق</button>
+              <button id="confirmRefreshBtn" style="background:#e53935;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:14px;">موافق</button>
+            </div>
+          </div>
+        `;
+        
+        document.body.appendChild(refreshModal);
+        
+        // إلغاء التحديث
+        document.getElementById('cancelRefreshBtn').addEventListener('click', () => {
+          document.body.removeChild(refreshModal);
+        });
+        
+        // تأكيد التحديث
+        document.getElementById('confirmRefreshBtn').addEventListener('click', () => {
+          document.body.removeChild(refreshModal);
+          hasUnsavedChanges = false;
+          window.removeEventListener('beforeunload', arguments.callee);
+          window.location.reload();
+        });
+        
+        // إغلاق النافذة عند النقر خارجها
+        refreshModal.addEventListener('click', (e) => {
+          if (e.target === refreshModal) {
+            document.body.removeChild(refreshModal);
+          }
+        });
+      }
+    });
+
+    // تتبع التغييرات لتحديد إذا كان هناك بيانات غير محفوظة
+    function trackChanges() {
+      hasUnsavedChanges = true;
+    }
+
+    // إضافة مستمعي الأحداث لتتبع التغييرات
+    document.getElementById('notes').addEventListener('input', trackChanges);
     
     // التهيئة الأولية
     renderCurrentSlide();
