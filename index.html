@@ -1008,16 +1008,16 @@
           const gov = customerData.custGov || 'غير محدد';
           const notes = customerData.notes || '';
           
-          // إضافة الجدول
+          // إضافة الجدول مع Header باللون الأزرق الداكن والنص الأبيض
           const rows = [
             [
-              { text: 'Merch Code', options: { bold: true } },
-              { text: 'Acc-Code', options: { bold: true } },
-              { text: 'Customer Name', options: { bold: true } },
-              { text: 'Customer Address', options: { bold: true } },
-              { text: 'Customer Type', options: { bold: true } },
-              { text: 'Gov.', options: { bold: true } },
-              { text: 'Notes', options: { bold: true } }
+              { text: 'Merch Code', options: { bold: true, fill: { color: '000080' }, color: 'FFFFFF' } },
+              { text: 'Acc-Code', options: { bold: true, fill: { color: '000080' }, color: 'FFFFFF' } },
+              { text: 'Customer Name', options: { bold: true, fill: { color: '000080' }, color: 'FFFFFF' } },
+              { text: 'Customer Address', options: { bold: true, fill: { color: '000080' }, color: 'FFFFFF' } },
+              { text: 'Customer Type', options: { bold: true, fill: { color: '000080' }, color: 'FFFFFF' } },
+              { text: 'Gov.', options: { bold: true, fill: { color: '000080' }, color: 'FFFFFF' } },
+              { text: 'Notes', options: { bold: true, fill: { color: '000080' }, color: 'FFFFFF' } }
             ],
             [merch, acc, name, addr, type, gov, notes]
           ];
