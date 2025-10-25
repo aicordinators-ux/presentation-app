@@ -1062,152 +1062,208 @@
     });
 
     document.getElementById('exportBtn').addEventListener('click', async () => {
-      const hasImages = slides.some(slide => slide.images.some(img => img !== null));
-      if (!hasImages) {
-        showToast('يرجى إضافة صورة واحدة على الأقل', 'error');
-        return;
-      }
+  const hasImages = slides.some(slide => slide.images.some(img => img !== null));
+  if (!hasImages) {
+    showToast('يرجى إضافة صورة واحدة على الأقل', 'error');
+    return;
+  }
 
-      try {
-        showToast('جاري إنشاء العرض التقديمي...', 'info');
+  try {
+    showToast('جاري إنشاء العرض التقديمي...', 'info');
+    
+    const pptx = new PptxGenJS();
+    pptx.layout = 'LAYOUT_WIDE';
+    
+    slides.forEach((slide, index) => {
+      const slideObj = pptx.addSlide();
+      
+      const imgWidth = (13.33 - (0.6 * 2) - 0.3 * 2) / 3;
+      const imgHeight = 4.5;
+      
+      // إضافة الصور
+      slide.images.forEach((data, j) => {
+        const x = 0.6 + j * (imgWidth + 0.15);
+        const y = 1.0;
         
-        const pptx = new PptxGenJS();
-        pptx.layout = 'LAYOUT_WIDE';
-        
-        slides.forEach((slide, index) => {
-          const slideObj = pptx.addSlide();
-          
-          const imgWidth = (13.33 - (0.6 * 2) - 0.3 * 2) / 3;
-          const imgHeight = 4.5;
-          
-          // إضافة الصور
-          slide.images.forEach((data, j) => {
-            const x = 0.6 + j * (imgWidth + 0.15);
-            const y = 1.0;
-            
-            if (data) {
-              slideObj.addImage({
-                data: data,
-                x: x,
-                y: y,
-                w: imgWidth,
-                h: imgHeight
-              });
-            } else {
-              slideObj.addShape(pptx.ShapeType.rect, {
-                x: x,
-                y: y,
-                w: imgWidth,
-                h: imgHeight,
-                fill: { color: 'F7F7F7' },
-                line: { color: 'CCCCCC' }
-              });
-              
-              slideObj.addText('لا توجد صورة', {
-                x: x,
-                y: y + imgHeight / 2 - 0.2,
-                w: imgWidth,
-                h: 0.4,
-                align: 'center',
-                fontSize: 10,
-                color: '888888'
-              });
-            }
+        if (data) {
+          slideObj.addImage({
+            data: data,
+            x: x,
+            y: y,
+            w: imgWidth,
+            h: imgHeight
+          });
+        } else {
+          slideObj.addShape(pptx.ShapeType.rect, {
+            x: x,
+            y: y,
+            w: imgWidth,
+            h: imgHeight,
+            fill: { color: 'F7F7F7' },
+            line: { color: 'CCCCCC' }
           });
           
-          // استخدام بيانات العميل المخزنة في السلايد
-          const customerData = slide.customerData;
-          const merch = customerData.merchCode || 'غير محدد';
-          const acc = customerData.accCode || 'غير محدد';
-          const name = customerData.custName || 'غير محدد';
-          const addr = customerData.custAddress || 'غير محدد';
-          const type = customerData.custType || 'غير محدد';
-          const gov = customerData.custGov || 'غير محدد';
-          const notes = customerData.notes || '';
-          
-          // إضافة الجدول
-          const rows = [
-            [
-              { text: 'Merch Code', options: { bold: true } },
-              { text: 'Acc-Code', options: { bold: true } },
-              { text: 'Customer Name', options: { bold: true } },
-              { text: 'Customer Address', options: { bold: true } },
-              { text: 'Customer Type', options: { bold: true } },
-              { text: 'Gov.', options: { bold: true } },
-              { text: 'Notes', options: { bold: true } }
-            ],
-            [merch, acc, name, addr, type, gov, notes]
-          ];
-          
-          slideObj.addTable(rows, {
-            x: 0.3,
-            y: 6,
-            w: 12.5,
+          slideObj.addText('لا توجد صورة', {
+            x: x,
+            y: y + imgHeight / 2 - 0.2,
+            w: imgWidth,
+            h: 0.4,
+            align: 'center',
             fontSize: 10,
-            border: { pt: 1, color: '999999' },
-            fill: { color: 'F9F9F9' }
+            color: '888888'
           });
-        });
+        }
+      });
+      
+      // استخدام بيانات العميل المخزنة في السلايد
+      const customerData = slide.customerData;
+      const merch = customerData.merchCode || 'غير محدد';
+      const acc = customerData.accCode || 'غير محدد';
+      const name = customerData.custName || 'غير محدد';
+      const addr = customerData.custAddress || 'غير محدد';
+      const type = customerData.custType || 'غير محدد';
+      const gov = customerData.custGov || 'غير محدد';
+      const notes = customerData.notes || '';
+      
+      // إضافة الجدول مع التنسيق الجديد - Dark Blue للصف الأول
+      const rows = [
+        [
+          { 
+            text: 'Merch Code', 
+            options: { 
+              bold: true, 
+              fill: { color: '1F4E79' },  // Dark Blue
+              color: 'FFFFFF',             // White text
+              align: 'center'
+            } 
+          },
+          { 
+            text: 'Acc-Code', 
+            options: { 
+              bold: true, 
+              fill: { color: '1F4E79' },
+              color: 'FFFFFF',
+              align: 'center'
+            } 
+          },
+          { 
+            text: 'Customer Name', 
+            options: { 
+              bold: true, 
+              fill: { color: '1F4E79' },
+              color: 'FFFFFF',
+              align: 'center'
+            } 
+          },
+          { 
+            text: 'Customer Address', 
+            options: { 
+              bold: true, 
+              fill: { color: '1F4E79' },
+              color: 'FFFFFF',
+              align: 'center'
+            } 
+          },
+          { 
+            text: 'Customer Type', 
+            options: { 
+              bold: true, 
+              fill: { color: '1F4E79' },
+              color: 'FFFFFF',
+              align: 'center'
+            } 
+          },
+          { 
+            text: 'Gov.', 
+            options: { 
+              bold: true, 
+              fill: { color: '1F4E79' },
+              color: 'FFFFFF',
+              align: 'center'
+            } 
+          },
+          { 
+            text: 'Notes', 
+            options: { 
+              bold: true, 
+              fill: { color: '1F4E79' },
+              color: 'FFFFFF',
+              align: 'center'
+            } 
+          }
+        ],
+        [merch, acc, name, addr, type, gov, notes]
+      ];
+      
+      slideObj.addTable(rows, {
+        x: 0.3,
+        y: 6,
+        w: 12.5,
+        fontSize: 10,
+        border: { pt: 1, color: '999999' },
+        fill: { color: 'F9F9F9' }
+      });
+    });
 
-        // استخدام نافذة مخصصة للحفظ
-        const fileNameModal = document.createElement('div');
-        fileNameModal.className = 'modal';
-        fileNameModal.innerHTML = `
-          <div class="modal-content">
-            <h3 style="margin-bottom:10px;">حفظ العرض التقديمي بإسم:</h3>
-            <input type="text" id="fileNameInput" value="presentation" style="padding:8px;width:100%;box-sizing:border-box;border-radius:6px;border:1px solid #ccc;margin-bottom:15px;">
-            <div class="modal-buttons">
-              <button id="cancelSaveBtn" style="background:#888;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">إلغاء</button>
-              <button id="confirmSaveBtn" style="background:#0b71eb;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">موافق</button>
-            </div>
-          </div>
-        `;
+    // استخدام نافذة مخصصة للحفظ
+    const fileNameModal = document.createElement('div');
+    fileNameModal.className = 'modal';
+    fileNameModal.innerHTML = `
+      <div class="modal-content">
+        <h3 style="margin-bottom:10px;">حفظ العرض التقديمي بإسم:</h3>
+        <input type="text" id="fileNameInput" value="presentation" style="padding:8px;width:100%;box-sizing:border-box;border-radius:6px;border:1px solid #ccc;margin-bottom:15px;">
+        <div class="modal-buttons">
+          <button id="cancelSaveBtn" style="background:#888;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">إلغاء</button>
+          <button id="confirmSaveBtn" style="background:#0b71eb;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">موافق</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(fileNameModal);
+    
+    const fileNameInput = document.getElementById('fileNameInput');
+    fileNameInput.select();
+    
+    // إضافة event listeners للأزرار
+    document.getElementById('cancelSaveBtn').addEventListener('click', () => {
+      document.body.removeChild(fileNameModal);
+      showToast('تم إلغاء الحفظ', 'info');
+    });
+    
+    document.getElementById('confirmSaveBtn').addEventListener('click', async () => {
+      const fileName = fileNameInput.value.trim() || 'presentation';
+      document.body.removeChild(fileNameModal);
+      
+      await pptx.writeFile({ fileName: `${fileName}.pptx` });
+      hasUnsavedChanges = false;
+      showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
+    });
+    
+    // السماح بالضغط على Enter للحفظ
+    fileNameInput.addEventListener('keypress', async (e) => {
+      if (e.key === 'Enter') {
+        const fileName = fileNameInput.value.trim() || 'presentation';
+        document.body.removeChild(fileNameModal);
         
-        document.body.appendChild(fileNameModal);
-        
-        const fileNameInput = document.getElementById('fileNameInput');
-        fileNameInput.select();
-        
-        // إضافة event listeners للأزرار
-        document.getElementById('cancelSaveBtn').addEventListener('click', () => {
-          document.body.removeChild(fileNameModal);
-          showToast('تم إلغاء الحفظ', 'info');
-        });
-        
-        document.getElementById('confirmSaveBtn').addEventListener('click', async () => {
-          const fileName = fileNameInput.value.trim() || 'presentation';
-          document.body.removeChild(fileNameModal);
-          
-          await pptx.writeFile({ fileName: `${fileName}.pptx` });
-          hasUnsavedChanges = false;
-          showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
-        });
-        
-        // السماح بالضغط على Enter للحفظ
-        fileNameInput.addEventListener('keypress', async (e) => {
-          if (e.key === 'Enter') {
-            const fileName = fileNameInput.value.trim() || 'presentation';
-            document.body.removeChild(fileNameModal);
-            
-            await pptx.writeFile({ fileName: `${fileName}.pptx` });
-            hasUnsavedChanges = false;
-            showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
-          }
-        });
-        
-        // إغلاق النافذة عند النقر خارجها
-        fileNameModal.addEventListener('click', (e) => {
-          if (e.target === fileNameModal) {
-            document.body.removeChild(fileNameModal);
-            showToast('تم إلغاء الحفظ', 'info');
-          }
-        });
-        
-      } catch (error) {
-        console.error(error);
-        showToast('فشل في إنشاء العرض التقديمي', 'error');
+        await pptx.writeFile({ fileName: `${fileName}.pptx` });
+        hasUnsavedChanges = false;
+        showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
       }
     });
+    
+    // إغلاق النافذة عند النقر خارجها
+    fileNameModal.addEventListener('click', (e) => {
+      if (e.target === fileNameModal) {
+        document.body.removeChild(fileNameModal);
+        showToast('تم إلغاء الحفظ', 'info');
+      }
+    });
+    
+  } catch (error) {
+    console.error(error);
+    showToast('فشل في إنشاء العرض التقديمي', 'error');
+  }
+});
 
     // تحديث البيانات
     document.getElementById('refreshDataBtn').addEventListener('click', () => {
