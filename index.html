@@ -390,6 +390,7 @@
     <div class="data-status" id="dataStatus">
       <span id="statusText">جاري تحميل بيانات العملاء...</span>
       <button id="retryLoadBtn" class="ghost" style="display: none; font-size: 12px; padding: 4px 8px;">إعادة المحاولة</button>
+      <button id="loadLocalFileBtn" class="ghost" style="display: none; font-size: 12px; padding: 4px 8px; margin-right: 8px;">تحميل ملف محلي</button>
     </div>
     
     <header>
@@ -399,6 +400,7 @@
         <button id="addSlideForNewCustomerBtn" class="secondary" disabled>➕ إضافة سلايد لعميل جديد</button>
         <button id="exportBtn" disabled>📤 تصدير العرض</button>
         <button id="refreshDataBtn" class="ghost">🔄 تحديث البيانات</button>
+        <button id="loadLocalExcelBtn" class="ghost">📁 تحميل ملف Excel</button>
       </div>
     </header>
 
@@ -448,6 +450,7 @@
       <div class="small">قائمة السلايدات:</div>
       <div class="slides-list" id="slidesList"></div>
       <input type="file" id="hiddenFileInput" accept="image/*" style="display:none" />
+      <input type="file" id="excelFileInput" accept=".xlsx,.xls" style="display:none" />
     </main>
 
     <footer>
@@ -480,6 +483,7 @@
     const placeholdersEl = document.getElementById('placeholders');
     const slidesListEl = document.getElementById('slidesList');
     const hiddenInput = document.getElementById('hiddenFileInput');
+    const excelFileInput = document.getElementById('excelFileInput');
     const toast = document.getElementById('toast');
     let pendingIdx = 0;
     let currentCustomerCode = '';
@@ -529,8 +533,118 @@
       }
     }
 
-    // رابط البيانات من GitHub
-    const GITHUB_EXCEL_URL = "https://raw.githubusercontent.com/aicordinators-ux/presentation-app/main/Customers%202025.xlsx";
+    // روابط البيانات البديلة من GitHub
+    const GITHUB_EXCEL_URLS = [
+      "https://raw.githubusercontent.com/aicordinators-ux/presentation-app/main/Customers%202025.xlsx",
+      "https://github.com/aicordinators-ux/presentation-app/raw/main/Customers%202025.xlsx"
+    ];
+
+    // دالة لمعالجة بيانات Excel
+    function processExcelData(workbook) {
+      console.log('الشيتات المتاحة:', workbook.SheetNames);
+      
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      
+      console.log('نطاق البيانات:', worksheet['!ref']);
+      
+      // الحصول على جميع البيانات كمصفوفة
+      const allData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      console.log('جميع البيانات:', allData);
+      
+      // البحث عن صف العناوين
+      let headers = [];
+      let dataStartRow = 0;
+      
+      for (let i = 0; i < Math.min(10, allData.length); i++) {
+        const row = allData[i];
+        if (Array.isArray(row)) {
+          const stringRow = row.map(cell => String(cell).toLowerCase());
+          // البحث عن صف يحتوي على الكلمات المفتاحية للعناوين
+          const hasMerch = stringRow.some(cell => cell.includes('merch') || cell.includes('كود'));
+          const hasCustomer = stringRow.some(cell => cell.includes('customer') || cell.includes('عميل'));
+          
+          if (hasMerch && hasCustomer) {
+            headers = row.map(cell => String(cell));
+            dataStartRow = i + 1;
+            break;
+          }
+        }
+      }
+      
+      // إذا لم نجد عناوين، نستخدم الترتيب الافتراضي
+      if (headers.length === 0) {
+        headers = ['Merch Code', 'Acc-Code', 'Customer Name', 'Customer Address', 'Customer Type', 'Gov.', 'Notes'];
+        dataStartRow = 0;
+      }
+      
+      console.log('العناوين المكتشفة:', headers);
+      console.log('صف بداية البيانات:', dataStartRow);
+      
+      // تحويل البيانات مع العناوين المكتشفة
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+        header: headers,
+        range: dataStartRow 
+      });
+      
+      console.log('البيانات مع العناوين:', jsonData);
+      
+      // معالجة البيانات - التأكد من تخزين الأكواد كنصوص مع الحفاظ على الأصفار البادئة
+      excelData = jsonData.map(row => {
+        // الحفاظ على الأكواد كنصوص تمامًا كما هي في الملف
+        const merchCode = row[headers[0]] !== undefined ? String(row[headers[0]]) : '';
+        
+        return {
+          "Merch Code": merchCode,
+          "Acc-Code": row[headers[1]] !== undefined ? String(row[headers[1]]) : '',
+          "Customer Name": row[headers[2]] !== undefined ? String(row[headers[2]]) : '',
+          "Customer Address": row[headers[3]] !== undefined ? String(row[headers[3]]) : '',
+          "Customer Type": row[headers[4]] !== undefined ? String(row[headers[4]]) : '',
+          "Gov.": row[headers[5]] !== undefined ? String(row[headers[5]]) : '',
+          "Notes": row[headers[6]] !== undefined ? String(row[headers[6]]) : ''
+        };
+      }).filter(item => item["Merch Code"] !== '' && item["Merch Code"] !== undefined);
+
+      console.log('البيانات بعد المعالجة:', excelData);
+      
+      if (excelData.length > 0) {
+        updateDataStatus('success', `تم تحميل ${excelData.length} سجل من بيانات العملاء`);
+        showToast(`تم تحميل ${excelData.length} سجل من بيانات العملاء`, 'success');
+        isDataLoaded = true;
+        toggleUIElements(true);
+        
+        // إخفاء أزرار إعادة المحاولة
+        document.getElementById('retryLoadBtn').style.display = 'none';
+        document.getElementById('loadLocalFileBtn').style.display = 'none';
+      } else {
+        throw new Error('تم تحميل الملف ولكن لم يتم العثور على بيانات');
+      }
+    }
+
+    // دالة تحميل البيانات من ملف محلي
+    function handleLocalExcelFile(file) {
+      if (!file) return;
+      
+      updateDataStatus('loading', 'جاري تحميل الملف المحلي...');
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          processExcelData(workbook);
+        } catch (error) {
+          console.error('خطأ في معالجة الملف المحلي:', error);
+          updateDataStatus('error', 'خطأ في معالجة الملف المحلي');
+          showToast('خطأ في معالجة الملف المحلي', 'error');
+        }
+      };
+      reader.onerror = function() {
+        updateDataStatus('error', 'خطأ في قراءة الملف');
+        showToast('خطأ في قراءة الملف', 'error');
+      };
+      reader.readAsArrayBuffer(file);
+    }
 
     // دالة تحميل البيانات الرئيسية
     async function loadSheetData() {
@@ -538,113 +652,51 @@
         updateDataStatus('loading', 'جاري تحميل بيانات العملاء...');
         toggleUIElements(false);
         
-        // استخدام CORS proxy لتجاوز مشكلة الـ 403
-        const proxyUrl = 'https://api.allorigins.win/raw?url=';
-        const targetUrl = encodeURIComponent(GITHUB_EXCEL_URL + '?t=' + new Date().getTime());
-        const url = proxyUrl + targetUrl;
+        let success = false;
         
-        console.log('جاري تحميل من:', url);
-        
-        // إضافة مهلة للطلب (timeout)
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 ثواني
-        
-        const res = await fetch(url, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        
-        if (!res.ok) {
-          throw new Error(`خطأ في تحميل البيانات - Status: ${res.status}`);
-        }
-        
-        const arrayBuffer = await res.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-        
-        console.log('الشيتات المتاحة:', workbook.SheetNames);
-        
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        
-        console.log('نطاق البيانات:', worksheet['!ref']);
-        
-        // الحصول على جميع البيانات كمصفوفة
-        const allData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-        console.log('جميع البيانات:', allData);
-        
-        // البحث عن صف العناوين
-        let headers = [];
-        let dataStartRow = 0;
-        
-        for (let i = 0; i < Math.min(10, allData.length); i++) {
-          const row = allData[i];
-          if (Array.isArray(row)) {
-            const stringRow = row.map(cell => String(cell).toLowerCase());
-            // البحث عن صف يحتوي على الكلمات المفتاحية للعناوين
-            const hasMerch = stringRow.some(cell => cell.includes('merch') || cell.includes('كود'));
-            const hasCustomer = stringRow.some(cell => cell.includes('customer') || cell.includes('عميل'));
+        // تجربة جميع الروابط البديلة
+        for (const excelUrl of GITHUB_EXCEL_URLS) {
+          try {
+            console.log('جاري تحميل من:', excelUrl);
             
-            if (hasMerch && hasCustomer) {
-              headers = row.map(cell => String(cell));
-              dataStartRow = i + 1;
+            // إضافة مهلة للطلب (timeout)
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 ثانية
+            
+            const res = await fetch(excelUrl, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            
+            if (res.ok) {
+              const arrayBuffer = await res.arrayBuffer();
+              const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+              processExcelData(workbook);
+              success = true;
               break;
             }
+          } catch (err) {
+            console.log(`فشل التحميل من ${excelUrl}:`, err);
+            // الاستمرار في تجربة الرابط التالي
           }
         }
         
-        // إذا لم نجد عناوين، نستخدم الترتيب الافتراضي
-        if (headers.length === 0) {
-          headers = ['Merch Code', 'Acc-Code', 'Customer Name', 'Customer Address', 'Customer Type', 'Gov.', 'Notes'];
-          dataStartRow = 0;
-        }
-        
-        console.log('العناوين المكتشفة:', headers);
-        console.log('صف بداية البيانات:', dataStartRow);
-        
-        // تحويل البيانات مع العناوين المكتشفة
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
-          header: headers,
-          range: dataStartRow 
-        });
-        
-        console.log('البيانات مع العناوين:', jsonData);
-        
-        // معالجة البيانات - التأكد من تخزين الأكواد كنصوص مع الحفاظ على الأصفار البادئة
-        excelData = jsonData.map(row => {
-          // الحفاظ على الأكواد كنصوص تمامًا كما هي في الملف
-          const merchCode = row[headers[0]] !== undefined ? String(row[headers[0]]) : '';
-          
-          return {
-            "Merch Code": merchCode,
-            "Acc-Code": row[headers[1]] !== undefined ? String(row[headers[1]]) : '',
-            "Customer Name": row[headers[2]] !== undefined ? String(row[headers[2]]) : '',
-            "Customer Address": row[headers[3]] !== undefined ? String(row[headers[3]]) : '',
-            "Customer Type": row[headers[4]] !== undefined ? String(row[headers[4]]) : '',
-            "Gov.": row[headers[5]] !== undefined ? String(row[headers[5]]) : '',
-            "Notes": row[headers[6]] !== undefined ? String(row[headers[6]]) : ''
-          };
-        }).filter(item => item["Merch Code"] !== '' && item["Merch Code"] !== undefined);
-
-        console.log('البيانات بعد المعالجة:', excelData);
-        
-        if (excelData.length > 0) {
-          updateDataStatus('success', `تم تحميل ${excelData.length} سجل من بيانات العملاء`);
-          showToast(`تم تحميل ${excelData.length} سجل من بيانات العملاء`, 'success');
-          isDataLoaded = true;
-          toggleUIElements(true);
-        } else {
-          throw new Error('تم تحميل الملف ولكن لم يتم العثور على بيانات');
+        if (!success) {
+          throw new Error('فشل تحميل البيانات من جميع المصادر');
         }
         
       } catch (err) {
-  console.error('خطأ في تحميل بيانات الورقة:', err);
-  
-  updateDataStatus('error', 'فشل تحميل بيانات العملاء');
-  showToast('فشل تحميل بيانات العملاء', 'error');
-  isDataLoaded = false;
-  toggleUIElements(false);
-  
-  // إظهار زر إعادة المحاولة
-  document.getElementById('retryLoadBtn').style.display = 'block';
-}
+        console.error('خطأ في تحميل بيانات الورقة:', err);
+        
+        updateDataStatus('error', 'فشل تحميل بيانات العملاء');
+        showToast('فشل تحميل بيانات العملاء. يرجى تحميل ملف Excel محلي.', 'error');
+        isDataLoaded = false;
+        toggleUIElements(false);
+        
+        // إظهار أزرار إعادة المحاولة وتحويل الملف المحلي
+        document.getElementById('retryLoadBtn').style.display = 'block';
+        document.getElementById('loadLocalFileBtn').style.display = 'block';
+      }
+    }
+
     // تحميل البيانات عند بدء التشغيل
     window.addEventListener('load', function() {
       loadSheetData();
@@ -653,7 +705,26 @@
     // إعادة تحميل البيانات عند النقر على زر إعادة المحاولة
     document.getElementById('retryLoadBtn').addEventListener('click', function() {
       this.style.display = 'none';
+      document.getElementById('loadLocalFileBtn').style.display = 'none';
       loadSheetData();
+    });
+
+    // تحميل ملف محلي عند النقر على الزر
+    document.getElementById('loadLocalFileBtn').addEventListener('click', function() {
+      excelFileInput.click();
+    });
+
+    // تحميل ملف Excel محلي
+    document.getElementById('loadLocalExcelBtn').addEventListener('click', function() {
+      excelFileInput.click();
+    });
+
+    // معالجة اختيار ملف Excel
+    excelFileInput.addEventListener('change', function(e) {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        handleLocalExcelFile(file);
+      }
     });
 
     // تعبئة البيانات عند كتابة Merch Code
