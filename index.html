@@ -529,37 +529,6 @@
       }
     }
 
-    // بيانات تجريبية احتياطية في حال فشل تحميل البيانات
-    const sampleData = [
-      {
-        "Merch Code": "01674",
-        "Acc-Code": "ACC01674",
-        "Customer Name": "شركة النور للتجارة",
-        "Customer Address": "القاهرة - مصر الجديدة",
-        "Customer Type": "تاجر جملة",
-        "Gov.": "القاهرة",
-        "Notes": "عميل ممتاز"
-      },
-      {
-        "Merch Code": "00001674",
-        "Acc-Code": "ACC00001674",
-        "Customer Name": "شركة الضياء للمقاولات",
-        "Customer Address": "الجيزة - الدقي",
-        "Customer Type": "مقاول",
-        "Gov.": "الجيزة",
-        "Notes": "مشاريع كبرى"
-      },
-      {
-        "Merch Code": "12345",
-        "Acc-Code": "ACC12345",
-        "Customer Name": "شركة الأمل للاستيراد",
-        "Customer Address": "الإسكندرية - سيدي جابر",
-        "Customer Type": "مستورد",
-        "Gov.": "الإسكندرية",
-        "Notes": "تعاملات دولية"
-      }
-    ];
-
     // رابط البيانات من GitHub
     const GITHUB_EXCEL_URL = "https://raw.githubusercontent.com/aicordinators-ux/presentation-app/main/Customers%202025.xlsx";
 
@@ -666,20 +635,16 @@
         }
         
       } catch (err) {
-        console.error('خطأ في تحميل بيانات الورقة:', err);
-        
-        // استخدام البيانات التجريبية في حال فشل التحميل
-        excelData = sampleData;
-        updateDataStatus('warning', 'تم استخدام بيانات تجريبية. يمكنك تجربة الميزات');
-        showToast('تم تحميل بيانات تجريبية. يمكنك تجربة الميزات', 'warning');
-        isDataLoaded = true;
-        toggleUIElements(true);
-        
-        // إظهار زر إعادة المحاولة
-        document.getElementById('retryLoadBtn').style.display = 'block';
-      }
-    }
-
+  console.error('خطأ في تحميل بيانات الورقة:', err);
+  
+  updateDataStatus('error', 'فشل تحميل بيانات العملاء');
+  showToast('فشل تحميل بيانات العملاء', 'error');
+  isDataLoaded = false;
+  toggleUIElements(false);
+  
+  // إظهار زر إعادة المحاولة
+  document.getElementById('retryLoadBtn').style.display = 'block';
+}
     // تحميل البيانات عند بدء التشغيل
     window.addEventListener('load', function() {
       loadSheetData();
