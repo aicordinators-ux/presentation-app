@@ -529,6 +529,37 @@
       }
     }
 
+    // بيانات تجريبية احتياطية في حال فشل تحميل البيانات
+    const sampleData = [
+      {
+        "Merch Code": "01674",
+        "Acc-Code": "ACC01674",
+        "Customer Name": "شركة النور للتجارة",
+        "Customer Address": "القاهرة - مصر الجديدة",
+        "Customer Type": "تاجر جملة",
+        "Gov.": "القاهرة",
+        "Notes": "عميل ممتاز"
+      },
+      {
+        "Merch Code": "00001674",
+        "Acc-Code": "ACC00001674",
+        "Customer Name": "شركة الضياء للمقاولات",
+        "Customer Address": "الجيزة - الدقي",
+        "Customer Type": "مقاول",
+        "Gov.": "الجيزة",
+        "Notes": "مشاريع كبرى"
+      },
+      {
+        "Merch Code": "12345",
+        "Acc-Code": "ACC12345",
+        "Customer Name": "شركة الأمل للاستيراد",
+        "Customer Address": "الإسكندرية - سيدي جابر",
+        "Customer Type": "مستورد",
+        "Gov.": "الإسكندرية",
+        "Notes": "تعاملات دولية"
+      }
+    ];
+
     // رابط البيانات من GitHub
     const GITHUB_EXCEL_URL = "https://raw.githubusercontent.com/aicordinators-ux/presentation-app/main/Customers%202025.xlsx";
 
@@ -544,7 +575,13 @@
         const url = proxyUrl + targetUrl;
         
         console.log('جاري تحميل من:', url);
-        const res = await fetch(url);
+        
+        // إضافة مهلة للطلب (timeout)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 ثواني
+        
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
         
         if (!res.ok) {
           throw new Error(`خطأ في تحميل البيانات - Status: ${res.status}`);
@@ -625,18 +662,18 @@
           isDataLoaded = true;
           toggleUIElements(true);
         } else {
-          updateDataStatus('error', 'تم تحميل الملف ولكن لم يتم العثور على بيانات');
-          showToast('تم تحميل الملف ولكن لم يتم العثور على بيانات', 'warning');
-          isDataLoaded = false;
-          toggleUIElements(false);
+          throw new Error('تم تحميل الملف ولكن لم يتم العثور على بيانات');
         }
         
       } catch (err) {
         console.error('خطأ في تحميل بيانات الورقة:', err);
-        updateDataStatus('error', 'فشل تحميل بيانات العملاء');
-        showToast('فشل تحميل بيانات العملاء', 'error');
-        isDataLoaded = false;
-        toggleUIElements(false);
+        
+        // استخدام البيانات التجريبية في حال فشل التحميل
+        excelData = sampleData;
+        updateDataStatus('warning', 'تم استخدام بيانات تجريبية. يمكنك تجربة الميزات');
+        showToast('تم تحميل بيانات تجريبية. يمكنك تجربة الميزات', 'warning');
+        isDataLoaded = true;
+        toggleUIElements(true);
         
         // إظهار زر إعادة المحاولة
         document.getElementById('retryLoadBtn').style.display = 'block';
@@ -1079,22 +1116,16 @@
         const slideHeight = 7.5;
         
         slides.forEach((slide, index) => {
-  const slideObj = pptx.addSlide();
+          const slideObj = pptx.addSlide();
 
-  // ✅ إضافة الخلفية من الصورة المرفوعة على GitHub
-  slideObj.background = {
-    path: 'https://raw.githubusercontent.com/aicordinators-ux/presentation-app/main/Template.jpg'
-  };
+          // ✅ إضافة الخلفية من الصورة المرفوعة على GitHub
+          slideObj.background = {
+            path: 'https://raw.githubusercontent.com/aicordinators-ux/presentation-app/main/Template.jpg'
+          };
           
-  // 🔹 (اختياري) تقدر تشيل السطر اللي بيضيف خلفية بيضاء لأنه مش محتاج دلوقتي
-  // slideObj.background = { color: 'FFFFFF' };
-  
-  const imgWidth = (slideWidth - (0.6 * 2) - 0.3 * 2) / 3;
-  const imgHeight = 4.5;
-  const borderWidth = 0.1; // إطار عريض
-          
-          
-          // ⬇️⬇️⬇️ لا يوجد عنوان للسلايد هنا ⬇️⬇️⬇️
+          const imgWidth = (slideWidth - (0.6 * 2) - 0.3 * 2) / 3;
+          const imgHeight = 4.5;
+          const borderWidth = 0.1; // إطار عريض
           
           // إضافة الصور مع إطار أسود عريض
           slide.images.forEach((data, j) => {
@@ -1248,8 +1279,7 @@
             ]
           ];
           
-       
-        slideObj.addTable(rows, {
+          slideObj.addTable(rows, {
             x: 0.3,
             y: 5.8,
             w: 12.7,
@@ -1260,8 +1290,6 @@
             align: 'center',
             valign: 'middle'
           });
-
-                 
         });
 
         // نافذة الحفظ
