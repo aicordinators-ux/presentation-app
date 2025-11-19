@@ -1,1417 +1,1533 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>مصمم برزنتيشن مع بيانات العملاء</title>
-  <script src="https://unpkg.com/pptxgenjs@3.9.0/dist/pptxgen.bundle.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <style>
-    /* نفس الـ CSS السابق */
-    :root {
-      --bg: #f7f7f8;
-      --card: #fff;
-      --accent: #0b71eb;
-      --muted: #666;
-      --error: #e53935;
-      --success: #43a047;
-      --secondary: #2c8a2c;
-    }
-    
-    html, body {
-      height: 100%;
-      margin: 0;
-      font-family: Tahoma, Arial, sans-serif;
-      background: var(--bg);
-      color: #111;
-    }
-    
-    .app {
-      max-width: 980px;
-      margin: 12px auto;
-      padding: 14px;
-    }
-    
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-    }
-    
-    h1 {
-      font-size: 18px;
-      margin: 0;
-    }
-    
-    .controls {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    
-    button {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      padding: 10px 12px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-      font-size: 14px;
-    }
-    
-    button:hover {
-      background: #095ac5;
-    }
-    
-    button.secondary {
-      background: var(--secondary);
-    }
-    
-    button.secondary:hover {
-      background: #247a24;
-    }
-    
-    button.ghost {
-      background: transparent;
-      color: var(--accent);
-      border: 1px solid rgba(11, 113, 235, 0.15);
-    }
-    
-    button.ghost:hover {
-      background: rgba(11, 113, 235, 0.05);
-    }
-    
-    button:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-    
-    main {
-      margin-top: 12px;
-    }
-    
-    .slide-area {
-      background: var(--card);
-      padding: 12px;
-      border-radius: 10px;
-      box-shadow: 0 6px 18px rgba(10, 10, 10, 0.04);
-      margin-bottom: 20px;
-    }
-    
-    .placeholders {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-    }
-    
-    .ph {
-      position: relative;
-      padding-top: 56.25%;
-      background: linear-gradient(180deg, #eef2ff, #fff);
-      border-radius: 8px;
-      border: 2px dashed rgba(0, 0, 0, 0.06);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      cursor: pointer;
-      transition: border-color 0.2s;
-    }
-    
-    .ph:hover {
-      border-color: var(--accent);
-    }
-    
-    .ph img {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    
-    .ph .label {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--muted);
-      font-size: 13px;
-      text-align: center;
-      padding: 4px;
-    }
-    
-    .small {
-      font-size: 13px;
-      color: var(--muted);
-      margin-top: 10px;
-    }
-    
-    input[type="text"] {
-      padding: 8px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 14px;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    
-    input[type="text"]:disabled {
-      background-color: #f5f5f5;
-      color: #999;
-    }
-    
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 8px;
-      margin-top: 10px;
-      margin-bottom: 20px;
-      background: var(--card);
-      padding: 15px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    }
-    
-    .form-grid div {
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .form-grid label {
-      font-size: 12px;
-      margin-bottom: 4px;
-      color: var(--muted);
-    }
-    
-    .slides-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 10px;
-    }
-    
-    .slide-thumb {
-      background: var(--card);
-      padding: 8px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      border: 1px solid #eee;
-      transition: all 0.2s;
-      font-size: 13px;
-      position: relative;
-    }
-    
-    .slide-thumb:hover {
-      border-color: var(--accent);
-    }
-    
-    .slide-thumb.active {
-      background: var(--accent);
-      color: white;
-    }
-    
-    .slide-customer {
-      font-size: 10px;
-      margin-top: 2px;
-      opacity: 0.8;
-    }
-    
-    footer {
-      margin-top: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .toast {
-      display: none;
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: var(--accent);
-      color: #fff;
-      padding: 10px 14px;
-      border-radius: 8px;
-      font-size: 14px;
-      z-index: 1000;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-    
-    .toast.error {
-      background: var(--error);
-    }
-    
-    .toast.success {
-      background: var(--success);
-    }
-    
-    .toast.warning {
-      background: #ff9800;
-    }
-    
-    .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1001;
-    }
-    
-    .modal-content {
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      text-align: center;
-      min-width: 280px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-    }
-    
-    .modal-buttons {
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-      margin-top: 15px;
-    }
-    
-    .data-source {
-      background: #e8f5e8;
-      padding: 10px;
-      border-radius: 6px;
-      margin-top: 10px;
-      border: 1px solid #c8e6c9;
-      font-size: 12px;
-    }
-    
-    .customer-info {
-      background: #e8f0fe;
-      padding: 10px;
-      border-radius: 6px;
-      margin-top: 10px;
-      border: 1px solid #bbdefb;
-      font-size: 12px;
-    }
-    
-    .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(255, 255, 255, 0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      flex-direction: column;
-    }
-    
-    .loading-spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid var(--accent);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 10px;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    .data-status {
-      background: #fff3cd;
-      padding: 8px 12px;
-      border-radius: 6px;
-      margin-bottom: 10px;
-      border: 1px solid #ffeaa7;
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    
-    .data-status.success {
-      background: #d1edff;
-      border-color: #b3d9ff;
-    }
-    
-    .data-status.error {
-      background: #ffeaea;
-      border-color: #ffcccc;
-    }
-    
-    @media (max-width: 768px) {
-      .placeholders {
-        grid-template-columns: 1fr;
-      }
-      
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      
-      .controls {
-        width: 100%;
-        justify-content: space-between;
-      }
-      
-      button {
-        padding: 8px 10px;
-        font-size: 13px;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مصمم عروض تقديمية - بيانات العملاء</title>
+    <script src="https://unpkg.com/pptxgenjs@3.9.0/dist/pptxgen.bundle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #0b71eb;
+            --secondary: #2c8a2c;
+            --light: #f7f7f8;
+            --dark: #333;
+            --success: #43a047;
+            --warning: #ff9800;
+            --error: #e53935;
+            --card: #fff;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo h1 {
+            font-size: 24px;
+            color: var(--primary);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #095ac5;
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #247a24;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+        
+        .btn-outline:hover {
+            background-color: rgba(11, 113, 235, 0.1);
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+        
+        .status-bar {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-bar.success {
+            background-color: #d1edff;
+            border-color: #b3d9ff;
+        }
+        
+        .status-bar.error {
+            background-color: #ffeaea;
+            border-color: #ffcccc;
+        }
+        
+        .customer-info {
+            background-color: #e8f0fe;
+            border: 1px solid #bbdefb;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            background-color: var(--card);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-size: 14px;
+            margin-bottom: 5px;
+            color: #666;
+        }
+        
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        input[type="text"]:read-only {
+            background-color: #f5f5f5;
+            color: #777;
+        }
+        
+        input[type="text"]:disabled {
+            background-color: #f5f5f5;
+            color: #999;
+        }
+        
+        .slide-area {
+            background-color: var(--card);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+        }
+        
+        .placeholders {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .placeholder {
+            position: relative;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            background: linear-gradient(180deg, #eef2ff, #fff);
+            border: 2px dashed rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .placeholder:hover {
+            border-color: var(--primary);
+            background: linear-gradient(180deg, #e0e8ff, #f5f7ff);
+        }
+        
+        .placeholder img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .placeholder .label {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .slides-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .slide-thumb {
+            background-color: var(--card);
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 120px;
+        }
+        
+        .slide-thumb:hover {
+            border-color: var(--primary);
+        }
+        
+        .slide-thumb.active {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .slide-customer {
+            font-size: 12px;
+            margin-top: 5px;
+            opacity: 0.8;
+        }
+        
+        footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--primary);
+            color: white;
+            padding: 12px 18px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            display: none;
+        }
+        
+        .toast.error {
+            background-color: var(--error);
+        }
+        
+        .toast.success {
+            background-color: var(--success);
+        }
+        
+        .toast.warning {
+            background-color: var(--warning);
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .modal-title {
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        .data-help {
+            background-color: #e8f5e8;
+            border: 1px solid #c8e6c9;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .controls {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .placeholders {
+                grid-template-columns: 1fr;
+            }
+            
+            footer {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="app">
-    <!-- شريط حالة البيانات -->
-    <div class="data-status" id="dataStatus">
-      <span id="statusText">جاري تحميل بيانات العملاء...</span>
-      <button id="retryLoadBtn" class="ghost" style="display: none; font-size: 12px; padding: 4px 8px;">إعادة المحاولة</button>
-      <button id="loadLocalFileBtn" class="ghost" style="display: none; font-size: 12px; padding: 4px 8px; margin-right: 8px;">تحميل ملف محلي</button>
-    </div>
-    
-    <header>
-      <h1>مصمم برزنتيشن — بيانات العملاء</h1>
-      <div class="controls">
-        <button id="addSlideBtn" disabled>➕ إضافة سلايد لنفس العميل </button>
-        <button id="addSlideForNewCustomerBtn" class="secondary" disabled>➕ إضافة سلايد لعميل جديد</button>
-        <button id="exportBtn" disabled>📤 تصدير العرض</button>
-        <button id="refreshDataBtn" class="ghost">🔄 تحديث البيانات</button>
-      </div>
-    </header>
-
-    <div class="customer-info" id="customerInfo" style="display: none;">
-      <strong>العميل الحالي:</strong> <span id="currentCustomerName">غير محدد</span>
-      <div style="margin-top: 5px; font-size: 11px; color: #666;">
-        كود العميل: <span id="currentCustomerCode">غير محدد</span>
-      </div>
-    </div>
-
-    <section class="form-grid">
-      <div>
-        <label for="merchCode">Merch Code</label>
-        <input type="text" id="merchCode" placeholder="جاري تحميل البيانات..." disabled>
-      </div>
-      <div>
-        <label for="accCode">Acc-Code</label>
-        <input type="text" id="accCode" readonly>
-      </div>
-      <div>
-        <label for="custName">Customer Name</label>
-        <input type="text" id="custName" readonly>
-      </div>
-      <div>
-        <label for="custAddress">Address</label>
-        <input type="text" id="custAddress" readonly>
-      </div>
-      <div>
-        <label for="custType">Customer Type</label>
-        <input type="text" id="custType" readonly>
-      </div>
-      <div>
-        <label for="custGov">Gov.</label>
-        <input type="text" id="custGov" readonly>
-      </div>
-      <div>
-        <label for="notes">Notes</label>
-        <input type="text" id="notes" placeholder="ملاحظات إضافية" disabled>
-      </div>
-    </section>
-
-    <main>
-      <section class="slide-area">
-        <div class="placeholders" id="placeholders"></div>
-        <div class="small">اضغط على أي مربع لاختيار صورة من الكاميرا أو المعرض.</div>
-      </section>
-      <div class="small">قائمة السلايدات:</div>
-      <div class="slides-list" id="slidesList"></div>
-      <input type="file" id="hiddenFileInput" accept="image/*" style="display:none" />
-      <input type="file" id="excelFileInput" accept=".xlsx,.xls" style="display:none" />
-    </main>
-
-    <footer>
-      <div class="small">الصور سيتم ضغطها إلى 600px لتقليل الحجم.</div>
-      <div>
-        <button id="clearBtn" class="ghost" disabled>🗑️ تفريغ السلايدات</button>
-      </div>
-    </footer>
-  </div>
-
-  <div class="toast" id="toast"></div>
-
-  <script>
-    let excelData = [];
-    // تغيير هيكل البيانات لحفظ كل سلايد مع بيانات العميل الخاص بها
-    let slides = [{
-      images: [null, null, null],
-      customerData: {
-        merchCode: '',
-        accCode: '',
-        custName: '',
-        custAddress: '',
-        custType: '',
-        custGov: '',
-        notes: ''
-      }
-    }];
-    let currentIndex = 0;
-    const MAX_WIDTH = 600;
-    const placeholdersEl = document.getElementById('placeholders');
-    const slidesListEl = document.getElementById('slidesList');
-    const hiddenInput = document.getElementById('hiddenFileInput');
-    const excelFileInput = document.getElementById('excelFileInput');
-    const toast = document.getElementById('toast');
-    let pendingIdx = 0;
-    let currentCustomerCode = '';
-    let hasUnsavedChanges = false;
-    let isDataLoaded = false;
-
-    // وظيفة لعرض الرسائل
-    function showToast(msg, type = 'info', time = 3000) {
-      toast.textContent = msg;
-      toast.className = 'toast ' + type;
-      toast.style.display = 'block';
-      setTimeout(() => {
-        toast.style.display = 'none';
-      }, time);
-    }
-
-    // تحديث حالة البيانات
-    function updateDataStatus(status, message) {
-      const dataStatus = document.getElementById('dataStatus');
-      const statusText = document.getElementById('statusText');
-      
-      statusText.textContent = message;
-      dataStatus.className = 'data-status';
-      
-      if (status === 'loading') {
-        dataStatus.classList.add('loading');
-      } else if (status === 'success') {
-        dataStatus.classList.add('success');
-      } else if (status === 'error') {
-        dataStatus.classList.add('error');
-      }
-    }
-
-    // تمكين/تعطيل عناصر الواجهة
-    function toggleUIElements(enabled) {
-      document.getElementById('merchCode').disabled = !enabled;
-      document.getElementById('notes').disabled = !enabled;
-      document.getElementById('addSlideBtn').disabled = !enabled;
-      document.getElementById('addSlideForNewCustomerBtn').disabled = !enabled;
-      document.getElementById('exportBtn').disabled = !enabled;
-      document.getElementById('clearBtn').disabled = !enabled;
-      
-      if (enabled) {
-        document.getElementById('merchCode').placeholder = "أدخل كود العميل";
-      } else {
-        document.getElementById('merchCode').placeholder = "جاري تحميل البيانات...";
-      }
-    }
-
-    // روابط البيانات البديلة من GitHub
-    const GITHUB_EXCEL_URLS = [
-      "https://raw.githubusercontent.com/aicordinators-ux/presentation-app/main/Customers%202025.xlsx",
-      "https://github.com/aicordinators-ux/presentation-app/raw/main/Customers%202025.xlsx"
-    ];
-
-    // دالة لمعالجة بيانات Excel
-    function processExcelData(workbook) {
-      console.log('الشيتات المتاحة:', workbook.SheetNames);
-      
-      const firstSheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[firstSheetName];
-      
-      console.log('نطاق البيانات:', worksheet['!ref']);
-      
-      // الحصول على جميع البيانات كمصفوفة
-      const allData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-      console.log('جميع البيانات:', allData);
-      
-      // البحث عن صف العناوين
-      let headers = [];
-      let dataStartRow = 0;
-      
-      for (let i = 0; i < Math.min(10, allData.length); i++) {
-        const row = allData[i];
-        if (Array.isArray(row)) {
-          const stringRow = row.map(cell => String(cell).toLowerCase());
-          // البحث عن صف يحتوي على الكلمات المفتاحية للعناوين
-          const hasMerch = stringRow.some(cell => cell.includes('merch') || cell.includes('كود'));
-          const hasCustomer = stringRow.some(cell => cell.includes('customer') || cell.includes('عميل'));
-          
-          if (hasMerch && hasCustomer) {
-            headers = row.map(cell => String(cell));
-            dataStartRow = i + 1;
-            break;
-          }
-        }
-      }
-      
-      // إذا لم نجد عناوين، نستخدم الترتيب الافتراضي
-      if (headers.length === 0) {
-        headers = ['Merch Code', 'Acc-Code', 'Customer Name', 'Customer Address', 'Customer Type', 'Gov.', 'Notes'];
-        dataStartRow = 0;
-      }
-      
-      console.log('العناوين المكتشفة:', headers);
-      console.log('صف بداية البيانات:', dataStartRow);
-      
-      // تحويل البيانات مع العناوين المكتشفة
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
-        header: headers,
-        range: dataStartRow 
-      });
-      
-      console.log('البيانات مع العناوين:', jsonData);
-      
-      // معالجة البيانات - التأكد من تخزين الأكواد كنصوص مع الحفاظ على الأصفار البادئة
-      excelData = jsonData.map(row => {
-        // الحفاظ على الأكواد كنصوص تمامًا كما هي في الملف
-        const merchCode = row[headers[0]] !== undefined ? String(row[headers[0]]) : '';
-        
-        return {
-          "Merch Code": merchCode,
-          "Acc-Code": row[headers[1]] !== undefined ? String(row[headers[1]]) : '',
-          "Customer Name": row[headers[2]] !== undefined ? String(row[headers[2]]) : '',
-          "Customer Address": row[headers[3]] !== undefined ? String(row[headers[3]]) : '',
-          "Customer Type": row[headers[4]] !== undefined ? String(row[headers[4]]) : '',
-          "Gov.": row[headers[5]] !== undefined ? String(row[headers[5]]) : '',
-          "Notes": row[headers[6]] !== undefined ? String(row[headers[6]]) : ''
-        };
-      }).filter(item => item["Merch Code"] !== '' && item["Merch Code"] !== undefined);
-
-      console.log('البيانات بعد المعالجة:', excelData);
-      
-      if (excelData.length > 0) {
-        updateDataStatus('success', `تم تحميل ${excelData.length} سجل من بيانات العملاء`);
-        showToast(`تم تحميل ${excelData.length} سجل من بيانات العملاء`, 'success');
-        isDataLoaded = true;
-        toggleUIElements(true);
-        
-        // إخفاء أزرار إعادة المحاولة
-        document.getElementById('retryLoadBtn').style.display = 'none';
-        document.getElementById('loadLocalFileBtn').style.display = 'none';
-      } else {
-        throw new Error('تم تحميل الملف ولكن لم يتم العثور على بيانات');
-      }
-    }
-
-    // دالة تحميل البيانات من ملف محلي
-    function handleLocalExcelFile(file) {
-      if (!file) return;
-      
-      updateDataStatus('loading', 'جاري تحميل الملف المحلي...');
-      
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          processExcelData(workbook);
-        } catch (error) {
-          console.error('خطأ في معالجة الملف المحلي:', error);
-          updateDataStatus('error', 'خطأ في معالجة الملف المحلي');
-          showToast('خطأ في معالجة الملف المحلي', 'error');
-        }
-      };
-      reader.onerror = function() {
-        updateDataStatus('error', 'خطأ في قراءة الملف');
-        showToast('خطأ في قراءة الملف', 'error');
-      };
-      reader.readAsArrayBuffer(file);
-    }
-
-    // دالة تحميل البيانات الرئيسية
-    async function loadSheetData() {
-      try {
-        updateDataStatus('loading', 'جاري تحميل بيانات العملاء...');
-        toggleUIElements(false);
-        
-        let success = false;
-        
-        // تجربة جميع الروابط البديلة
-        for (const excelUrl of GITHUB_EXCEL_URLS) {
-          try {
-            console.log('جاري تحميل من:', excelUrl);
-            
-            // إضافة مهلة للطلب (timeout)
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 ثانية
-            
-            const res = await fetch(excelUrl, { signal: controller.signal });
-            clearTimeout(timeoutId);
-            
-            if (res.ok) {
-              const arrayBuffer = await res.arrayBuffer();
-              const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-              processExcelData(workbook);
-              success = true;
-              break;
-            }
-          } catch (err) {
-            console.log(`فشل التحميل من ${excelUrl}:`, err);
-            // الاستمرار في تجربة الرابط التالي
-          }
-        }
-        
-        if (!success) {
-          throw new Error('فشل تحميل البيانات من جميع المصادر');
-        }
-        
-      } catch (err) {
-        console.error('خطأ في تحميل بيانات الورقة:', err);
-        
-        updateDataStatus('error', 'فشل تحميل بيانات العملاء');
-        showToast('فشل تحميل بيانات العملاء. يرجى تحميل ملف Excel محلي.', 'error');
-        isDataLoaded = false;
-        toggleUIElements(false);
-        
-        // إظهار أزرار إعادة المحاولة وتحويل الملف المحلي
-        document.getElementById('retryLoadBtn').style.display = 'block';
-        document.getElementById('loadLocalFileBtn').style.display = 'block';
-      }
-    }
-
-    // تحميل البيانات عند بدء التشغيل
-    window.addEventListener('load', function() {
-      loadSheetData();
-    });
-
-    // إعادة تحميل البيانات عند النقر على زر إعادة المحاولة
-    document.getElementById('retryLoadBtn').addEventListener('click', function() {
-      this.style.display = 'none';
-      document.getElementById('loadLocalFileBtn').style.display = 'none';
-      loadSheetData();
-    });
-
-    // تحميل ملف محلي عند النقر على الزر
-    document.getElementById('loadLocalFileBtn').addEventListener('click', function() {
-      excelFileInput.click();
-    });
-
-    // معالجة اختيار ملف Excel
-    excelFileInput.addEventListener('change', function(e) {
-      const file = e.target.files && e.target.files[0];
-      if (file) {
-        handleLocalExcelFile(file);
-      }
-    });
-
-    // تعبئة البيانات عند كتابة Merch Code
-    document.getElementById('merchCode').addEventListener('input', () => {
-      if (!isDataLoaded) {
-        showToast('بيانات العملاء غير جاهزة بعد. يرجى الانتظار...', 'warning');
-        return;
-      }
-      
-      const code = document.getElementById('merchCode').value.trim();
-      
-      // إذا كان الحقل فارغ، امسح باقي الحقول
-      if (code === '') {
-        clearCustomerData();
-        return;
-      }
-
-      // البحث في البيانات - التعامل مع الأكواد كنصوص دائمًا
-      const match = findCustomerByCode(code);
-
-      if (match) {
-        fillCustomerData(match);
-        currentCustomerCode = code;
-        updateCustomerInfo(match['Customer Name'], code);
-        showToast('تم تحميل بيانات العميل', 'success');
-      } else {
-        // مسح الحقول إذا لم يتم العثور على العميل
-        clearCustomerData();
-        
-        if (code.length > 0) {
-          showToast('لم يتم العثور على بيانات لهذا الكود', 'error');
-        }
-      }
-    });
-
-    // دالة للبحث عن العميل بالكود - معدلة للتعامل مع الأكواد كنصوص
-    function findCustomerByCode(code) {
-      // البحث عن تطابق تام للنص - التعامل مع الأكواد كنصوص
-      return excelData.find(item => {
-        const merchCode = item['Merch Code'] || '';
-        // المقارنة كنصوص بالضبط كما تم إدخالها
-        return merchCode === code;
-      });
-    }
-
-    // دالة لتعبيئة بيانات العميل
-    function fillCustomerData(match) {
-      document.getElementById('accCode').value = match['Acc-Code'] || '';
-      document.getElementById('custName').value = match['Customer Name'] || '';
-      document.getElementById('custAddress').value = match['Customer Address'] || '';
-      document.getElementById('custType').value = match['Customer Type'] || '';
-      document.getElementById('custGov').value = match['Gov.'] || '';
-      document.getElementById('notes').value = match['Notes'] || '';
-    }
-
-    // دالة لمسح بيانات العميل
-    function clearCustomerData() {
-      document.getElementById('accCode').value = '';
-      document.getElementById('custName').value = '';
-      document.getElementById('custAddress').value = '';
-      document.getElementById('custType').value = '';
-      document.getElementById('custGov').value = '';
-      document.getElementById('notes').value = '';
-      currentCustomerCode = '';
-      document.getElementById('customerInfo').style.display = 'none';
-    }
-
-    // دالة لتحديث معلومات العميل المعروضة
-    function updateCustomerInfo(name, code) {
-      document.getElementById('currentCustomerName').textContent = name || 'غير محدد';
-      document.getElementById('currentCustomerCode').textContent = code || 'غير محدد';
-      document.getElementById('customerInfo').style.display = 'block';
-    }
-
-    // دالة لحفظ بيانات العميل الحالي في السلايد الحالي
-    function saveCurrentCustomerDataToSlide() {
-      slides[currentIndex].customerData = {
-        merchCode: document.getElementById('merchCode').value || '',
-        accCode: document.getElementById('accCode').value || '',
-        custName: document.getElementById('custName').value || '',
-        custAddress: document.getElementById('custAddress').value || '',
-        custType: document.getElementById('custType').value || '',
-        custGov: document.getElementById('custGov').value || '',
-        notes: document.getElementById('notes').value || ''
-      };
-    }
-
-    // دالة لتحميل بيانات العميل من السلايد الحالي
-    function loadCustomerDataFromSlide() {
-      const customerData = slides[currentIndex].customerData;
-      document.getElementById('merchCode').value = customerData.merchCode || '';
-      document.getElementById('accCode').value = customerData.accCode || '';
-      document.getElementById('custName').value = customerData.custName || '';
-      document.getElementById('custAddress').value = customerData.custAddress || '';
-      document.getElementById('custType').value = customerData.custType || '';
-      document.getElementById('custGov').value = customerData.custGov || '';
-      document.getElementById('notes').value = customerData.notes || '';
-      
-      // تحديث معلومات العميل المعروضة
-      if (customerData.merchCode) {
-        currentCustomerCode = customerData.merchCode;
-        updateCustomerInfo(customerData.custName, customerData.merchCode);
-      } else {
-        clearCustomerData();
-      }
-    }
-
-    // فتح نافذة اختيار الصورة
-    function openImagePicker(idx) {
-      pendingIdx = idx;
-      
-      const modal = document.createElement('div');
-      modal.className = 'modal';
-      modal.innerHTML = `
-        <div class="modal-content">
-          <h3 style="margin-bottom:10px;">اختر مصدر الصورة</h3>
-          <div class="modal-buttons">
-            <button id="camBtn" style="background:#0b71eb;color:#fff;border:none;padding:10px 14px;border-radius:8px;margin:6px;cursor:pointer;">📷 الكاميرا</button>
-            <button id="galleryBtn" style="background:#2c8a2c;color:#fff;border:none;padding:10px 14px;border-radius:8px;margin:6px;cursor:pointer;">🖼️ المعرض</button>
-          </div>
-        </div>
-      `;
-      
-      document.body.appendChild(modal);
-
-      modal.querySelector('#camBtn').addEventListener('click', () => {
-        document.body.removeChild(modal);
-        const camInput = document.createElement('input');
-        camInput.type = 'file';
-        camInput.accept = 'image/*';
-        camInput.capture = 'camera';
-        camInput.style.display = 'none';
-        camInput.addEventListener('change', async e => {
-          const file = e.target.files && e.target.files[0];
-          if (file) await handleSelectedFile(file);
-          camInput.remove();
-        });
-        document.body.appendChild(camInput);
-        camInput.click();
-      });
-
-      modal.querySelector('#galleryBtn').addEventListener('click', () => {
-        document.body.removeChild(modal);
-        hiddenInput.value = '';
-        hiddenInput.click();
-      });
-
-      modal.addEventListener('click', e => {
-        if (e.target === modal) {
-          document.body.removeChild(modal);
-        }
-      });
-    }
-
-    async function handleSelectedFile(file) {
-      if (!file) return;
-      
-      showToast('جاري معالجة الصورة...', 'info');
-      
-      try {
-        const dataUrl = await fileToDataURL(file);
-        const resized = await resizeDataUrl(dataUrl, MAX_WIDTH, 0.8);
-        slides[currentIndex].images[pendingIdx] = resized;
-        hasUnsavedChanges = true;
-        renderCurrentSlide();
-        showToast('تم إضافة الصورة بنجاح', 'success');
-      } catch (error) {
-        console.error(error);
-        showToast('فشل في معالجة الصورة', 'error');
-      }
-    }
-
-    function fileToDataURL(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    }
-
-    function resizeDataUrl(dataUrl, maxWidth, quality = 0.85) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-          const ratio = img.width / img.height;
-          const width = Math.min(maxWidth, img.width);
-          const height = Math.round(width / ratio);
-          
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          resolve(canvas.toDataURL('image/jpeg', quality));
-        };
-        img.onerror = () => reject(new Error('فشل تحميل الصورة'));
-        img.src = dataUrl;
-      });
-    }
-
-    hiddenInput.addEventListener('change', async e => {
-      const file = e.target.files && e.target.files[0];
-      await handleSelectedFile(file);
-    });
-
-    function renderSlides() {
-      slidesListEl.innerHTML = '';
-      slides.forEach((slide, index) => {
-        const thumb = document.createElement('div');
-        thumb.className = 'slide-thumb' + (index === currentIndex ? ' active' : '');
-        
-        const slideNumber = document.createElement('div');
-        slideNumber.textContent = `سلايد ${index + 1}`;
-        
-        const customerName = document.createElement('div');
-        customerName.className = 'slide-customer';
-        customerName.textContent = slide.customerData.custName || 'بدون عميل';
-        
-        thumb.appendChild(slideNumber);
-        thumb.appendChild(customerName);
-        
-        thumb.addEventListener('click', () => {
-          // حفظ بيانات السلايد الحالي قبل التبديل
-          saveCurrentCustomerDataToSlide();
-          
-          // الانتقال إلى السلايد الجديد
-          currentIndex = index;
-          renderCurrentSlide();
-          
-          // تحميل بيانات العميل من السلايد الجديد
-          loadCustomerDataFromSlide();
-        });
-        
-        slidesListEl.appendChild(thumb);
-      });
-    }
-
-    function renderCurrentSlide() {
-      placeholdersEl.innerHTML = '';
-      slides[currentIndex].images.forEach((data, index) => {
-        const placeholder = document.createElement('div');
-        placeholder.className = 'ph';
-        
-        if (data) {
-          const img = document.createElement('img');
-          img.src = data;
-          placeholder.appendChild(img);
-        } else {
-          const label = document.createElement('div');
-          label.className = 'label';
-          label.textContent = 'اضغط لاختيار صورة';
-          placeholder.appendChild(label);
-        }
-        
-        placeholder.addEventListener('click', () => openImagePicker(index));
-        placeholdersEl.appendChild(placeholder);
-      });
-      
-      renderSlides();
-    }
-
-    // إضافة سلايد للعميل الحالي
-    document.getElementById('addSlideBtn').addEventListener('click', () => {
-      if (!isDataLoaded) {
-        showToast('بيانات العملاء غير جاهزة بعد', 'error');
-        return;
-      }
-      
-      if (!currentCustomerCode) {
-        showToast('يرجى إدخال كود عميل أولاً', 'error');
-        return;
-      }
-      
-      // حفظ بيانات العميل الحالي في السلايد الجديد
-      slides.push({
-        images: [null, null, null],
-        customerData: {
-          merchCode: document.getElementById('merchCode').value || '',
-          accCode: document.getElementById('accCode').value || '',
-          custName: document.getElementById('custName').value || '',
-          custAddress: document.getElementById('custAddress').value || '',
-          custType: document.getElementById('custType').value || '',
-          custGov: document.getElementById('custGov').value || '',
-          notes: document.getElementById('notes').value || ''
-        }
-      });
-      
-      currentIndex = slides.length - 1;
-      hasUnsavedChanges = true;
-      renderCurrentSlide();
-      showToast('تم إضافة سلايد جديد للعميل الحالي', 'success');
-    });
-
-    // إضافة سلايد لعميل جديد
-    document.getElementById('addSlideForNewCustomerBtn').addEventListener('click', () => {
-      if (!isDataLoaded) {
-        showToast('بيانات العملاء غير جاهزة بعد', 'error');
-        return;
-      }
-      
-      const modal = document.createElement('div');
-      modal.className = 'modal';
-      modal.innerHTML = `
-        <div class="modal-content">
-          <h3 style="margin-bottom:10px;">إضافة سلايد لعميل جديد</h3>
-          <p style="margin-bottom:15px;font-size:14px;color:#666;">أدخل كود العميل الجديد:</p>
-          <input type="text" id="newCustomerCodeInput" placeholder="أدخل كود العميل" style="padding:8px;width:100%;box-sizing:border-box;border-radius:6px;border:1px solid #ccc;margin-bottom:15px;">
-          <div class="modal-buttons">
-            <button id="cancelNewCustomerBtn" style="background:#888;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">إلغاء</button>
-            <button id="confirmNewCustomerBtn" style="background:#2c8a2c;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">موافق</button>
-          </div>
-        </div>
-      `;
-      
-      document.body.appendChild(modal);
-      
-      const newCustomerCodeInput = document.getElementById('newCustomerCodeInput');
-      newCustomerCodeInput.focus();
-      
-      // إضافة event listeners للأزرار
-      document.getElementById('cancelNewCustomerBtn').addEventListener('click', () => {
-        document.body.removeChild(modal);
-      });
-      
-      document.getElementById('confirmNewCustomerBtn').addEventListener('click', () => {
-        const newCode = newCustomerCodeInput.value.trim();
-        if (!newCode) {
-          showToast('يرجى إدخال كود العميل', 'error');
-          return;
-        }
-        
-        const match = findCustomerByCode(newCode);
-        if (!match) {
-          showToast('لم يتم العثور على بيانات لهذا الكود', 'error');
-          return;
-        }
-        
-        // حفظ بيانات السلايد الحالي قبل التبديل
-        saveCurrentCustomerDataToSlide();
-        
-        // تعبئة بيانات العميل الجديد في النموذج
-        document.getElementById('merchCode').value = newCode;
-        fillCustomerData(match);
-        currentCustomerCode = newCode;
-        updateCustomerInfo(match['Customer Name'], newCode);
-        
-        // إضافة سلايد جديد مع بيانات العميل الجديد
-        slides.push({
-          images: [null, null, null],
-          customerData: {
-            merchCode: newCode,
-            accCode: match['Acc-Code'] || '',
-            custName: match['Customer Name'] || '',
-            custAddress: match['Customer Address'] || '',
-            custType: match['Customer Type'] || '',
-            custGov: match['Gov.'] || '',
-            notes: match['Notes'] || ''
-          }
-        });
-        
-        currentIndex = slides.length - 1;
-        hasUnsavedChanges = true;
-        renderCurrentSlide();
-        
-        document.body.removeChild(modal);
-        showToast('تم إضافة سلايد جديد للعميل: ' + match['Customer Name'], 'success');
-      });
-      
-      // السماح بالضغط على Enter للتأكيد
-      newCustomerCodeInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          document.getElementById('confirmNewCustomerBtn').click();
-        }
-      });
-      
-      // إغلاق النافذة عند النقر خارجها
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-          document.body.removeChild(modal);
-        }
-      });
-    });
-
-    document.getElementById('clearBtn').addEventListener('click', () => {
-      if (confirm('هل تريد حذف كل السلايدات؟')) {
-        slides = [{
-          images: [null, null, null],
-          customerData: {
-            merchCode: '',
-            accCode: '',
-            custName: '',
-            custAddress: '',
-            custType: '',
-            custGov: '',
-            notes: ''
-          }
-        }];
-        currentIndex = 0;
-        clearCustomerData();
-        hasUnsavedChanges = false;
-        renderCurrentSlide();
-        showToast('تم حذف جميع السلايدات', 'success');
-      }
-    });
-
-    // دالة التصدير المعدلة - تم إزالة أي إشارة إلى عنوان السلايد
-    document.getElementById('exportBtn').addEventListener('click', async () => {
-      const hasImages = slides.some(slide => slide.images.some(img => img !== null));
-      if (!hasImages) {
-        showToast('يرجى إضافة صورة واحدة على الأقل', 'error');
-        return;
-      }
-
-      try {
-        showToast('جاري إنشاء العرض التقديمي...', 'info');
-        
-        const pptx = new PptxGenJS();
-        pptx.layout = 'LAYOUT_WIDE';
-        
-        // إعدادات التصميم الأساسية
-        const slideWidth = 13.33;
-        const slideHeight = 7.5;
-        
-        slides.forEach((slide, index) => {
-          const slideObj = pptx.addSlide();
-
-          // ✅ إضافة الخلفية من الصورة المرفوعة على GitHub
-          slideObj.background = {
-            path: 'https://raw.githubusercontent.com/aicordinators-ux/presentation-app/main/Template.jpg'
-          };
-          
-          const imgWidth = (slideWidth - (0.6 * 2) - 0.3 * 2) / 3;
-          const imgHeight = 4.5;
-          const borderWidth = 0.1; // إطار عريض
-          
-          // إضافة الصور مع إطار أسود عريض
-          slide.images.forEach((data, j) => {
-            const x = 0.6 + j * (imgWidth + 0.15);
-            const y = 0.8;
-            
-            if (data) {
-              // إضافة الإطار الأسود العريض
-              slideObj.addShape(pptx.ShapeType.rect, {
-                x: x - borderWidth/2,
-                y: y - borderWidth/2,
-                w: imgWidth + borderWidth,
-                h: imgHeight + borderWidth,
-                fill: { color: '000000' },
-                line: { color: '000000', width: 2 }
-              });
-              
-              // إضافة الصورة داخل الإطار
-              slideObj.addImage({
-                data: data,
-                x: x,
-                y: y,
-                w: imgWidth,
-                h: imgHeight
-              });
-            } else {
-              // للمربعات الفارغة - إطار أسود مع خلفية رمادية
-              slideObj.addShape(pptx.ShapeType.rect, {
-                x: x - borderWidth/2,
-                y: y - borderWidth/2,
-                w: imgWidth + borderWidth,
-                h: imgHeight + borderWidth,
-                fill: { color: '000000' },
-                line: { color: '000000', width: 2 }
-              });
-              
-              slideObj.addShape(pptx.ShapeType.rect, {
-                x: x,
-                y: y,
-                w: imgWidth,
-                h: imgHeight,
-                fill: { color: 'F7F7F7' },
-                line: { color: 'CCCCCC', width: 1 }
-              });
-              
-              slideObj.addText('لا توجد صورة', {
-                x: x,
-                y: y + imgHeight / 2 - 0.2,
-                w: imgWidth,
-                h: 0.4,
-                align: 'center',
-                fontSize: 12,
-                color: '666666',
-                bold: true
-              });
-            }
-          });
-          
-          // استخدام بيانات العميل المخزنة في السلايد
-          const customerData = slide.customerData;
-          const merch = customerData.merchCode || 'غير محدد';
-          const acc = customerData.accCode || 'غير محدد';
-          const name = customerData.custName || 'غير محدد';
-          const addr = customerData.custAddress || 'غير محدد';
-          const type = customerData.custType || 'غير محدد';
-          const gov = customerData.custGov || 'غير محدد';
-          const notes = customerData.notes || '';
-          
-          // إضافة الجدول بتصميم محترف
-          const rows = [
-            [
-              { 
-                text: 'Merch Code', 
-                options: { 
-                  bold: true, 
-                  fill: { color: '1F4E79' },
-                  color: 'FFFFFF',
-                  align: 'center',
-                  fontSize: 11
-                } 
-              },
-              { 
-                text: 'Acc-Code', 
-                options: { 
-                  bold: true, 
-                  fill: { color: '1F4E79' },
-                  color: 'FFFFFF',
-                  align: 'center',
-                  fontSize: 11
-                } 
-              },
-              { 
-                text: 'Customer Name', 
-                options: { 
-                  bold: true, 
-                  fill: { color: '1F4E79' },
-                  color: 'FFFFFF',
-                  align: 'center',
-                  fontSize: 11
-                } 
-              },
-              { 
-                text: 'Customer Address', 
-                options: { 
-                  bold: true, 
-                  fill: { color: '1F4E79' },
-                  color: 'FFFFFF',
-                  align: 'center',
-                  fontSize: 11
-                } 
-              },
-              { 
-                text: 'Customer Type', 
-                options: { 
-                  bold: true, 
-                  fill: { color: '1F4E79' },
-                  color: 'FFFFFF',
-                  align: 'center',
-                  fontSize: 11
-                } 
-              },
-              { 
-                text: 'Gov.', 
-                options: { 
-                  bold: true, 
-                  fill: { color: '1F4E79' },
-                  color: 'FFFFFF',
-                  align: 'center',
-                  fontSize: 11
-                } 
-              },
-              { 
-                text: 'Notes', 
-                options: { 
-                  bold: true, 
-                  fill: { color: '1F4E79' },
-                  color: 'FFFFFF',
-                  align: 'center',
-                  fontSize: 11
-                } 
-              }
-            ],
-            [
-              merch, 
-              acc, 
-              name, 
-              addr, 
-              type, 
-              gov, 
-              notes
-            ]
-          ];
-          
-          slideObj.addTable(rows, {
-            x: 0.3,
-            y: 5.8,
-            w: 12.7,
-            colW: [1.5, 1.5, 2.5, 2.5, 1.5, 1.5, 1.7],
-            fontSize: 10,
-            border: { pt: 1, color: '666666' },
-            fill: { color: 'F9F9F9' },
-            align: 'center',
-            valign: 'middle'
-          });
-        });
-
-        // نافذة الحفظ
-        const fileNameModal = document.createElement('div');
-        fileNameModal.className = 'modal';
-        fileNameModal.innerHTML = `
-          <div class="modal-content">
-            <h3 style="margin-bottom:10px;">حفظ العرض التقديمي بإسم:</h3>
-            <input type="text" id="fileNameInput" value="عرض-العملاء" style="padding:8px;width:100%;box-sizing:border-box;border-radius:6px;border:1px solid #ccc;margin-bottom:15px;">
-            <div class="modal-buttons">
-              <button id="cancelSaveBtn" style="background:#888;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">إلغاء</button>
-              <button id="confirmSaveBtn" style="background:#0b71eb;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">موافق</button>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <h1>مصمم عروض تقديمية</h1>
             </div>
-          </div>
-        `;
-        
-        document.body.appendChild(fileNameModal);
-        
-        const fileNameInput = document.getElementById('fileNameInput');
-        fileNameInput.select();
-        
-        document.getElementById('cancelSaveBtn').addEventListener('click', () => {
-          document.body.removeChild(fileNameModal);
-          showToast('تم إلغاء الحفظ', 'info');
+            <div class="controls">
+                <button id="addSlideBtn" class="btn-primary" disabled>
+                    <span>+</span> إضافة سلايد لنفس العميل
+                </button>
+                <button id="addSlideForNewCustomerBtn" class="btn-secondary" disabled>
+                    <span>+</span> إضافة سلايد لعميل جديد
+                </button>
+                <button id="exportBtn" class="btn-primary" disabled>
+                    <span>📤</span> تصدير العرض
+                </button>
+                <button id="refreshDataBtn" class="btn-outline">
+                    <span>🔄</span> تحديث البيانات
+                </button>
+            </div>
+        </header>
+
+        <div class="status-bar" id="dataStatus">
+            <div>
+                <span id="statusText">جاري تحميل بيانات العملاء...</span>
+            </div>
+            <div>
+                <button id="retryLoadBtn" class="btn-outline" style="display: none; font-size: 12px; padding: 6px 10px;">
+                    إعادة المحاولة
+                </button>
+                <button id="loadLocalFileBtn" class="btn-outline" style="display: none; font-size: 12px; padding: 6px 10px; margin-right: 8px;">
+                    تحميل ملف محلي
+                </button>
+            </div>
+        </div>
+
+        <div class="customer-info" id="customerInfo" style="display: none;">
+            <div><strong>العميل الحالي:</strong> <span id="currentCustomerName">غير محدد</span></div>
+            <div style="margin-top: 5px;"><strong>كود العميل:</strong> <span id="currentCustomerCode">غير محدد</span></div>
+        </div>
+
+        <section class="form-grid">
+            <div class="form-group">
+                <label for="merchCode">Merch Code</label>
+                <input type="text" id="merchCode" placeholder="أدخل كود العميل" disabled>
+            </div>
+            <div class="form-group">
+                <label for="accCode">Acc-Code</label>
+                <input type="text" id="accCode" readonly>
+            </div>
+            <div class="form-group">
+                <label for="custName">Customer Name</label>
+                <input type="text" id="custName" readonly>
+            </div>
+            <div class="form-group">
+                <label for="custAddress">Address</label>
+                <input type="text" id="custAddress" readonly>
+            </div>
+            <div class="form-group">
+                <label for="custType">Customer Type</label>
+                <input type="text" id="custType" readonly>
+            </div>
+            <div class="form-group">
+                <label for="custGov">Gov.</label>
+                <input type="text" id="custGov" readonly>
+            </div>
+            <div class="form-group">
+                <label for="notes">Notes</label>
+                <input type="text" id="notes" placeholder="ملاحظات إضافية" disabled>
+            </div>
+        </section>
+
+        <main>
+            <section class="slide-area">
+                <h3 style="margin-bottom: 15px;">إضافة الصور للعرض التقديمي</h3>
+                <div class="placeholders" id="placeholders">
+                    <!-- سيتم تعبئتها بالجافاسكريبت -->
+                </div>
+                <p style="font-size: 14px; color: #666; margin-top: 10px;">
+                    اضغط على أي مربع لاختيار صورة من الكاميرا أو المعرض.
+                </p>
+            </section>
+            
+            <h3 style="margin-bottom: 10px;">قائمة السلايدات</h3>
+            <div class="slides-list" id="slidesList">
+                <!-- سيتم تعبئتها بالجافاسكريبت -->
+            </div>
+            
+            <div class="data-help">
+                <h4 style="margin-bottom: 10px;">مساعدة في تحميل البيانات</h4>
+                <p>إذا لم يتم تحميل بيانات العملاء تلقائيًا، يمكنك:</p>
+                <ol style="margin-top: 10px; padding-right: 20px;">
+                    <li>استخدام زر "تحديث البيانات" لإعادة المحاولة</li>
+                    <li>استخدام زر "تحميل ملف محلي" لتحميل ملف Excel من جهازك</li>
+                    <li>التأكد من أن ملف Excel يحتوي على أعمدة: Merch Code, Acc-Code, Customer Name, Customer Address, Customer Type, Gov., Notes</li>
+                </ol>
+            </div>
+        </main>
+
+        <footer>
+            <div style="font-size: 14px; color: #666;">
+                الصور سيتم ضغطها تلقائيًا لتحسين الأداء
+            </div>
+            <div>
+                <button id="clearBtn" class="btn-outline" disabled>
+                    <span>🗑️</span> تفريغ السلايدات
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- العناصر المخفية -->
+    <input type="file" id="hiddenFileInput" accept="image/*" style="display:none">
+    <input type="file" id="excelFileInput" accept=".xlsx,.xls" style="display:none">
+    
+    <!-- الرسائل العائمة -->
+    <div class="toast" id="toast"></div>
+    
+    <!-- نافذة التحميل -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div id="loadingText">جاري المعالجة...</div>
+    </div>
+
+    <script>
+        // البيانات والمتغيرات العامة
+        let excelData = [];
+        let slides = [{
+            images: [null, null, null],
+            customerData: {
+                merchCode: '',
+                accCode: '',
+                custName: '',
+                custAddress: '',
+                custType: '',
+                custGov: '',
+                notes: ''
+            }
+        }];
+        let currentIndex = 0;
+        const MAX_WIDTH = 600;
+        let currentCustomerCode = '';
+        let hasUnsavedChanges = false;
+        let isDataLoaded = false;
+
+        // العناصر في DOM
+        const placeholdersEl = document.getElementById('placeholders');
+        const slidesListEl = document.getElementById('slidesList');
+        const hiddenInput = document.getElementById('hiddenFileInput');
+        const excelFileInput = document.getElementById('excelFileInput');
+        const toast = document.getElementById('toast');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        let pendingIdx = 0;
+
+        // وظائف المساعدة
+        function showToast(msg, type = 'info', time = 3000) {
+            toast.textContent = msg;
+            toast.className = 'toast ' + type;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, time);
+        }
+
+        function showLoading(message = 'جاري المعالجة...') {
+            document.getElementById('loadingText').textContent = message;
+            loadingOverlay.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+        }
+
+        function updateDataStatus(status, message) {
+            const dataStatus = document.getElementById('dataStatus');
+            const statusText = document.getElementById('statusText');
+            
+            statusText.textContent = message;
+            dataStatus.className = 'status-bar';
+            
+            if (status === 'success') {
+                dataStatus.classList.add('success');
+            } else if (status === 'error') {
+                dataStatus.classList.add('error');
+            }
+        }
+
+        function toggleUIElements(enabled) {
+            document.getElementById('merchCode').disabled = !enabled;
+            document.getElementById('notes').disabled = !enabled;
+            document.getElementById('addSlideBtn').disabled = !enabled;
+            document.getElementById('addSlideForNewCustomerBtn').disabled = !enabled;
+            document.getElementById('exportBtn').disabled = !enabled;
+            document.getElementById('clearBtn').disabled = !enabled;
+            
+            if (enabled) {
+                document.getElementById('merchCode').placeholder = "أدخل كود العميل";
+            } else {
+                document.getElementById('merchCode').placeholder = "جاري تحميل البيانات...";
+            }
+        }
+
+        // روابط البيانات من GitHub
+        const GITHUB_EXCEL_URLS = [
+            "https://raw.githubusercontent.com/aicordinators-ux/presentation-app/main/Customers%202025.xlsx",
+            "https://github.com/aicordinators-ux/presentation-app/raw/main/Customers%202025.xlsx"
+        ];
+
+        // دالة لمعالجة بيانات Excel
+        function processExcelData(workbook) {
+            console.log('الشيتات المتاحة:', workbook.SheetNames);
+            
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            
+            console.log('نطاق البيانات:', worksheet['!ref']);
+            
+            // الحصول على جميع البيانات كمصفوفة
+            const allData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            console.log('جميع البيانات:', allData);
+            
+            // البحث عن صف العناوين
+            let headers = [];
+            let dataStartRow = 0;
+            
+            for (let i = 0; i < Math.min(10, allData.length); i++) {
+                const row = allData[i];
+                if (Array.isArray(row)) {
+                    const stringRow = row.map(cell => String(cell).toLowerCase());
+                    // البحث عن صف يحتوي على الكلمات المفتاحية للعناوين
+                    const hasMerch = stringRow.some(cell => cell.includes('merch') || cell.includes('كود'));
+                    const hasCustomer = stringRow.some(cell => cell.includes('customer') || cell.includes('عميل'));
+                    
+                    if (hasMerch && hasCustomer) {
+                        headers = row.map(cell => String(cell));
+                        dataStartRow = i + 1;
+                        break;
+                    }
+                }
+            }
+            
+            // إذا لم نجد عناوين، نستخدم الترتيب الافتراضي
+            if (headers.length === 0) {
+                headers = ['Merch Code', 'Acc-Code', 'Customer Name', 'Customer Address', 'Customer Type', 'Gov.', 'Notes'];
+                dataStartRow = 0;
+            }
+            
+            console.log('العناوين المكتشفة:', headers);
+            console.log('صف بداية البيانات:', dataStartRow);
+            
+            // تحويل البيانات مع العناوين المكتشفة
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+                header: headers,
+                range: dataStartRow 
+            });
+            
+            console.log('البيانات مع العناوين:', jsonData);
+            
+            // معالجة البيانات - التأكد من تخزين الأكواد كنصوص مع الحفاظ على الأصفار البادئة
+            excelData = jsonData.map(row => {
+                // الحفاظ على الأكواد كنصوص تمامًا كما هي في الملف
+                const merchCode = row[headers[0]] !== undefined ? String(row[headers[0]]) : '';
+                
+                return {
+                    "Merch Code": merchCode,
+                    "Acc-Code": row[headers[1]] !== undefined ? String(row[headers[1]]) : '',
+                    "Customer Name": row[headers[2]] !== undefined ? String(row[headers[2]]) : '',
+                    "Customer Address": row[headers[3]] !== undefined ? String(row[headers[3]]) : '',
+                    "Customer Type": row[headers[4]] !== undefined ? String(row[headers[4]]) : '',
+                    "Gov.": row[headers[5]] !== undefined ? String(row[headers[5]]) : '',
+                    "Notes": row[headers[6]] !== undefined ? String(row[headers[6]]) : ''
+                };
+            }).filter(item => item["Merch Code"] !== '' && item["Merch Code"] !== undefined);
+
+            console.log('البيانات بعد المعالجة:', excelData);
+            
+            if (excelData.length > 0) {
+                updateDataStatus('success', `تم تحميل ${excelData.length} سجل من بيانات العملاء`);
+                showToast(`تم تحميل ${excelData.length} سجل من بيانات العملاء`, 'success');
+                isDataLoaded = true;
+                toggleUIElements(true);
+                
+                // إخفاء أزرار إعادة المحاولة
+                document.getElementById('retryLoadBtn').style.display = 'none';
+                document.getElementById('loadLocalFileBtn').style.display = 'none';
+            } else {
+                throw new Error('تم تحميل الملف ولكن لم يتم العثور على بيانات');
+            }
+        }
+
+        // دالة تحميل البيانات من ملف محلي
+        function handleLocalExcelFile(file) {
+            if (!file) return;
+            
+            updateDataStatus('loading', 'جاري تحميل الملف المحلي...');
+            showLoading('جاري تحميل الملف المحلي...');
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    processExcelData(workbook);
+                    hideLoading();
+                } catch (error) {
+                    console.error('خطأ في معالجة الملف المحلي:', error);
+                    updateDataStatus('error', 'خطأ في معالجة الملف المحلي');
+                    showToast('خطأ في معالجة الملف المحلي', 'error');
+                    hideLoading();
+                }
+            };
+            reader.onerror = function() {
+                updateDataStatus('error', 'خطأ في قراءة الملف');
+                showToast('خطأ في قراءة الملف', 'error');
+                hideLoading();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // دالة تحميل البيانات الرئيسية
+        async function loadSheetData() {
+            try {
+                updateDataStatus('loading', 'جاري تحميل بيانات العملاء...');
+                toggleUIElements(false);
+                showLoading('جاري تحميل بيانات العملاء...');
+                
+                let success = false;
+                
+                // تجربة جميع الروابط البديلة
+                for (const excelUrl of GITHUB_EXCEL_URLS) {
+                    try {
+                        console.log('جاري تحميل من:', excelUrl);
+                        
+                        // إضافة مهلة للطلب (timeout)
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 ثانية
+                        
+                        const res = await fetch(excelUrl, { signal: controller.signal });
+                        clearTimeout(timeoutId);
+                        
+                        if (res.ok) {
+                            const arrayBuffer = await res.arrayBuffer();
+                            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                            processExcelData(workbook);
+                            success = true;
+                            hideLoading();
+                            break;
+                        }
+                    } catch (err) {
+                        console.log(`فشل التحميل من ${excelUrl}:`, err);
+                        // الاستمرار في تجربة الرابط التالي
+                    }
+                }
+                
+                if (!success) {
+                    throw new Error('فشل تحميل البيانات من جميع المصادر');
+                }
+                
+            } catch (err) {
+                console.error('خطأ في تحميل بيانات الورقة:', err);
+                
+                updateDataStatus('error', 'فشل تحميل بيانات العملاء');
+                showToast('فشل تحميل بيانات العملاء. يرجى تحميل ملف Excel محلي.', 'error');
+                isDataLoaded = false;
+                toggleUIElements(false);
+                hideLoading();
+                
+                // إظهار أزرار إعادة المحاولة وتحويل الملف المحلي
+                document.getElementById('retryLoadBtn').style.display = 'block';
+                document.getElementById('loadLocalFileBtn').style.display = 'block';
+            }
+        }
+
+        // تحميل البيانات عند بدء التشغيل
+        window.addEventListener('load', function() {
+            loadSheetData();
         });
-        
-        document.getElementById('confirmSaveBtn').addEventListener('click', async () => {
-          const fileName = fileNameInput.value.trim() || 'عرض-العملاء';
-          document.body.removeChild(fileNameModal);
-          
-          try {
-            await pptx.writeFile({ fileName: `${fileName}.pptx` });
-            hasUnsavedChanges = false;
-            showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
-          } catch (saveError) {
-            console.error('خطأ في الحفظ:', saveError);
-            showToast('فشل في حفظ الملف', 'error');
-          }
+
+        // إعادة تحميل البيانات عند النقر على زر إعادة المحاولة
+        document.getElementById('retryLoadBtn').addEventListener('click', function() {
+            this.style.display = 'none';
+            document.getElementById('loadLocalFileBtn').style.display = 'none';
+            loadSheetData();
         });
-        
-        fileNameInput.addEventListener('keypress', async (e) => {
-          if (e.key === 'Enter') {
-            const fileName = fileNameInput.value.trim() || 'عرض-العملاء';
-            document.body.removeChild(fileNameModal);
+
+        // تحميل ملف محلي عند النقر على الزر
+        document.getElementById('loadLocalFileBtn').addEventListener('click', function() {
+            excelFileInput.click();
+        });
+
+        // معالجة اختيار ملف Excel
+        excelFileInput.addEventListener('change', function(e) {
+            const file = e.target.files && e.target.files[0];
+            if (file) {
+                handleLocalExcelFile(file);
+            }
+        });
+
+        // تعبئة البيانات عند كتابة Merch Code
+        document.getElementById('merchCode').addEventListener('input', () => {
+            if (!isDataLoaded) {
+                showToast('بيانات العملاء غير جاهزة بعد. يرجى الانتظار...', 'warning');
+                return;
+            }
+            
+            const code = document.getElementById('merchCode').value.trim();
+            
+            // إذا كان الحقل فارغ، امسح باقي الحقول
+            if (code === '') {
+                clearCustomerData();
+                return;
+            }
+
+            // البحث في البيانات - التعامل مع الأكواد كنصوص دائمًا
+            const match = findCustomerByCode(code);
+
+            if (match) {
+                fillCustomerData(match);
+                currentCustomerCode = code;
+                updateCustomerInfo(match['Customer Name'], code);
+                showToast('تم تحميل بيانات العميل', 'success');
+            } else {
+                // مسح الحقول إذا لم يتم العثور على العميل
+                clearCustomerData();
+                
+                if (code.length > 0) {
+                    showToast('لم يتم العثور على بيانات لهذا الكود', 'error');
+                }
+            }
+        });
+
+        // دالة للبحث عن العميل بالكود - معدلة للتعامل مع الأكواد كنصوص
+        function findCustomerByCode(code) {
+            // البحث عن تطابق تام للنص - التعامل مع الأكواد كنصوص
+            return excelData.find(item => {
+                const merchCode = item['Merch Code'] || '';
+                // المقارنة كنصوص بالضبط كما تم إدخالها
+                return merchCode === code;
+            });
+        }
+
+        // دالة لتعبيئة بيانات العميل
+        function fillCustomerData(match) {
+            document.getElementById('accCode').value = match['Acc-Code'] || '';
+            document.getElementById('custName').value = match['Customer Name'] || '';
+            document.getElementById('custAddress').value = match['Customer Address'] || '';
+            document.getElementById('custType').value = match['Customer Type'] || '';
+            document.getElementById('custGov').value = match['Gov.'] || '';
+            document.getElementById('notes').value = match['Notes'] || '';
+        }
+
+        // دالة لمسح بيانات العميل
+        function clearCustomerData() {
+            document.getElementById('accCode').value = '';
+            document.getElementById('custName').value = '';
+            document.getElementById('custAddress').value = '';
+            document.getElementById('custType').value = '';
+            document.getElementById('custGov').value = '';
+            document.getElementById('notes').value = '';
+            currentCustomerCode = '';
+            document.getElementById('customerInfo').style.display = 'none';
+        }
+
+        // دالة لتحديث معلومات العميل المعروضة
+        function updateCustomerInfo(name, code) {
+            document.getElementById('currentCustomerName').textContent = name || 'غير محدد';
+            document.getElementById('currentCustomerCode').textContent = code || 'غير محدد';
+            document.getElementById('customerInfo').style.display = 'block';
+        }
+
+        // دالة لحفظ بيانات العميل الحالي في السلايد الحالي
+        function saveCurrentCustomerDataToSlide() {
+            slides[currentIndex].customerData = {
+                merchCode: document.getElementById('merchCode').value || '',
+                accCode: document.getElementById('accCode').value || '',
+                custName: document.getElementById('custName').value || '',
+                custAddress: document.getElementById('custAddress').value || '',
+                custType: document.getElementById('custType').value || '',
+                custGov: document.getElementById('custGov').value || '',
+                notes: document.getElementById('notes').value || ''
+            };
+        }
+
+        // دالة لتحميل بيانات العميل من السلايد الحالي
+        function loadCustomerDataFromSlide() {
+            const customerData = slides[currentIndex].customerData;
+            document.getElementById('merchCode').value = customerData.merchCode || '';
+            document.getElementById('accCode').value = customerData.accCode || '';
+            document.getElementById('custName').value = customerData.custName || '';
+            document.getElementById('custAddress').value = customerData.custAddress || '';
+            document.getElementById('custType').value = customerData.custType || '';
+            document.getElementById('custGov').value = customerData.custGov || '';
+            document.getElementById('notes').value = customerData.notes || '';
+            
+            // تحديث معلومات العميل المعروضة
+            if (customerData.merchCode) {
+                currentCustomerCode = customerData.merchCode;
+                updateCustomerInfo(customerData.custName, customerData.merchCode);
+            } else {
+                clearCustomerData();
+            }
+        }
+
+        // فتح نافذة اختيار الصورة
+        function openImagePicker(idx) {
+            pendingIdx = idx;
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3 class="modal-title">اختر مصدر الصورة</h3>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                        <button id="camBtn" class="btn-primary">📷 الكاميرا</button>
+                        <button id="galleryBtn" class="btn-secondary">🖼️ المعرض</button>
+                    </div>
+                    <div class="modal-buttons">
+                        <button id="cancelBtn" class="btn-outline">إلغاء</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+
+            modal.querySelector('#camBtn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+                const camInput = document.createElement('input');
+                camInput.type = 'file';
+                camInput.accept = 'image/*';
+                camInput.capture = 'camera';
+                camInput.style.display = 'none';
+                camInput.addEventListener('change', async e => {
+                    const file = e.target.files && e.target.files[0];
+                    if (file) await handleSelectedFile(file);
+                    camInput.remove();
+                });
+                document.body.appendChild(camInput);
+                camInput.click();
+            });
+
+            modal.querySelector('#galleryBtn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+                hiddenInput.value = '';
+                hiddenInput.click();
+            });
+
+            modal.querySelector('#cancelBtn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+
+            modal.addEventListener('click', e => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+        }
+
+        async function handleSelectedFile(file) {
+            if (!file) return;
+            
+            showToast('جاري معالجة الصورة...', 'info');
+            showLoading('جاري معالجة الصورة...');
             
             try {
-              await pptx.writeFile({ fileName: `${fileName}.pptx` });
-              hasUnsavedChanges = false;
-              showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
-            } catch (saveError) {
-              console.error('خطأ في الحفظ:', saveError);
-              showToast('فشل في حفظ الملف', 'error');
+                const dataUrl = await fileToDataURL(file);
+                const resized = await resizeDataUrl(dataUrl, MAX_WIDTH, 0.8);
+                slides[currentIndex].images[pendingIdx] = resized;
+                hasUnsavedChanges = true;
+                renderCurrentSlide();
+                hideLoading();
+                showToast('تم إضافة الصورة بنجاح', 'success');
+            } catch (error) {
+                console.error(error);
+                hideLoading();
+                showToast('فشل في معالجة الصورة', 'error');
             }
-          }
+        }
+
+        function fileToDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function resizeDataUrl(dataUrl, maxWidth, quality = 0.85) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const ratio = img.width / img.height;
+                    const width = Math.min(maxWidth, img.width);
+                    const height = Math.round(width / ratio);
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = () => reject(new Error('فشل تحميل الصورة'));
+                img.src = dataUrl;
+            });
+        }
+
+        hiddenInput.addEventListener('change', async e => {
+            const file = e.target.files && e.target.files[0];
+            await handleSelectedFile(file);
         });
-        
-        fileNameModal.addEventListener('click', (e) => {
-          if (e.target === fileNameModal) {
-            document.body.removeChild(fileNameModal);
-            showToast('تم إلغاء الحفظ', 'info');
-          }
+
+        function renderSlides() {
+            slidesListEl.innerHTML = '';
+            slides.forEach((slide, index) => {
+                const thumb = document.createElement('div');
+                thumb.className = 'slide-thumb' + (index === currentIndex ? ' active' : '');
+                
+                const slideNumber = document.createElement('div');
+                slideNumber.textContent = `سلايد ${index + 1}`;
+                
+                const customerName = document.createElement('div');
+                customerName.className = 'slide-customer';
+                customerName.textContent = slide.customerData.custName || 'بدون عميل';
+                
+                thumb.appendChild(slideNumber);
+                thumb.appendChild(customerName);
+                
+                thumb.addEventListener('click', () => {
+                    // حفظ بيانات السلايد الحالي قبل التبديل
+                    saveCurrentCustomerDataToSlide();
+                    
+                    // الانتقال إلى السلايد الجديد
+                    currentIndex = index;
+                    renderCurrentSlide();
+                    
+                    // تحميل بيانات العميل من السلايد الجديد
+                    loadCustomerDataFromSlide();
+                });
+                
+                slidesListEl.appendChild(thumb);
+            });
+        }
+
+        function renderCurrentSlide() {
+            placeholdersEl.innerHTML = '';
+            slides[currentIndex].images.forEach((data, index) => {
+                const placeholder = document.createElement('div');
+                placeholder.className = 'placeholder';
+                
+                if (data) {
+                    const img = document.createElement('img');
+                    img.src = data;
+                    placeholder.appendChild(img);
+                } else {
+                    const label = document.createElement('div');
+                    label.className = 'label';
+                    label.textContent = 'اضغط لاختيار صورة';
+                    placeholder.appendChild(label);
+                }
+                
+                placeholder.addEventListener('click', () => openImagePicker(index));
+                placeholdersEl.appendChild(placeholder);
+            });
+            
+            renderSlides();
+        }
+
+        // إضافة سلايد للعميل الحالي
+        document.getElementById('addSlideBtn').addEventListener('click', () => {
+            if (!isDataLoaded) {
+                showToast('بيانات العملاء غير جاهزة بعد', 'error');
+                return;
+            }
+            
+            if (!currentCustomerCode) {
+                showToast('يرجى إدخال كود عميل أولاً', 'error');
+                return;
+            }
+            
+            // حفظ بيانات العميل الحالي في السلايد الجديد
+            slides.push({
+                images: [null, null, null],
+                customerData: {
+                    merchCode: document.getElementById('merchCode').value || '',
+                    accCode: document.getElementById('accCode').value || '',
+                    custName: document.getElementById('custName').value || '',
+                    custAddress: document.getElementById('custAddress').value || '',
+                    custType: document.getElementById('custType').value || '',
+                    custGov: document.getElementById('custGov').value || '',
+                    notes: document.getElementById('notes').value || ''
+                }
+            });
+            
+            currentIndex = slides.length - 1;
+            hasUnsavedChanges = true;
+            renderCurrentSlide();
+            showToast('تم إضافة سلايد جديد للعميل الحالي', 'success');
         });
-        
-      } catch (error) {
-        console.error('خطأ رئيسي في إنشاء العرض:', error);
-        showToast('فشل في إنشاء العرض التقديمي', 'error');
-      }
-    });
 
-    // تحديث البيانات
-    document.getElementById('refreshDataBtn').addEventListener('click', () => {
-      loadSheetData();
-    });
+        // إضافة سلايد لعميل جديد
+        document.getElementById('addSlideForNewCustomerBtn').addEventListener('click', () => {
+            if (!isDataLoaded) {
+                showToast('بيانات العملاء غير جاهزة بعد', 'error');
+                return;
+            }
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3 class="modal-title">إضافة سلايد لعميل جديد</h3>
+                    <p style="margin-bottom:15px;">أدخل كود العميل الجديد:</p>
+                    <input type="text" id="newCustomerCodeInput" placeholder="أدخل كود العميل" style="padding:10px;width:100%;border-radius:6px;border:1px solid #ccc;margin-bottom:15px;">
+                    <div class="modal-buttons">
+                        <button id="cancelNewCustomerBtn" class="btn-outline">إلغاء</button>
+                        <button id="confirmNewCustomerBtn" class="btn-primary">موافق</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            const newCustomerCodeInput = document.getElementById('newCustomerCodeInput');
+            newCustomerCodeInput.focus();
+            
+            // إضافة event listeners للأزرار
+            document.getElementById('cancelNewCustomerBtn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+            
+            document.getElementById('confirmNewCustomerBtn').addEventListener('click', () => {
+                const newCode = newCustomerCodeInput.value.trim();
+                if (!newCode) {
+                    showToast('يرجى إدخال كود العميل', 'error');
+                    return;
+                }
+                
+                const match = findCustomerByCode(newCode);
+                if (!match) {
+                    showToast('لم يتم العثور على بيانات لهذا الكود', 'error');
+                    return;
+                }
+                
+                // حفظ بيانات السلايد الحالي قبل التبديل
+                saveCurrentCustomerDataToSlide();
+                
+                // تعبئة بيانات العميل الجديد في النموذج
+                document.getElementById('merchCode').value = newCode;
+                fillCustomerData(match);
+                currentCustomerCode = newCode;
+                updateCustomerInfo(match['Customer Name'], newCode);
+                
+                // إضافة سلايد جديد مع بيانات العميل الجديد
+                slides.push({
+                    images: [null, null, null],
+                    customerData: {
+                        merchCode: newCode,
+                        accCode: match['Acc-Code'] || '',
+                        custName: match['Customer Name'] || '',
+                        custAddress: match['Customer Address'] || '',
+                        custType: match['Customer Type'] || '',
+                        custGov: match['Gov.'] || '',
+                        notes: match['Notes'] || ''
+                    }
+                });
+                
+                currentIndex = slides.length - 1;
+                hasUnsavedChanges = true;
+                renderCurrentSlide();
+                
+                document.body.removeChild(modal);
+                showToast('تم إضافة سلايد جديد للعميل: ' + match['Customer Name'], 'success');
+            });
+            
+            // السماح بالضغط على Enter للتأكيد
+            newCustomerCodeInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('confirmNewCustomerBtn').click();
+                }
+            });
+            
+            // إغلاق النافذة عند النقر خارجها
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+        });
 
-    // التحذير عند محاولة تحديث الصفحة أو إغلاقها
-    window.addEventListener('beforeunload', function (e) {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = 'سيتم مسح كل البيانات المدخلة';
-      }
-    });
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3 class="modal-title">تفريغ السلايدات</h3>
+                    <p>هل تريد حذف كل السلايدات؟ هذا الإجراء لا يمكن التراجع عنه.</p>
+                    <div class="modal-buttons">
+                        <button id="cancelClearBtn" class="btn-outline">إلغاء</button>
+                        <button id="confirmClearBtn" class="btn-primary">تأكيد الحذف</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            document.getElementById('cancelClearBtn').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+            
+            document.getElementById('confirmClearBtn').addEventListener('click', () => {
+                slides = [{
+                    images: [null, null, null],
+                    customerData: {
+                        merchCode: '',
+                        accCode: '',
+                        custName: '',
+                        custAddress: '',
+                        custType: '',
+                        custGov: '',
+                        notes: ''
+                    }
+                }];
+                currentIndex = 0;
+                clearCustomerData();
+                hasUnsavedChanges = false;
+                renderCurrentSlide();
+                document.body.removeChild(modal);
+                showToast('تم حذف جميع السلايدات', 'success');
+            });
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+        });
 
-    // تتبع التغييرات لتحديد إذا كان هناك بيانات غير محفوظة
-    function trackChanges() {
-      hasUnsavedChanges = true;
-    }
+        // دالة التصدير المعدلة
+        document.getElementById('exportBtn').addEventListener('click', async () => {
+            const hasImages = slides.some(slide => slide.images.some(img => img !== null));
+            if (!hasImages) {
+                showToast('يرجى إضافة صورة واحدة على الأقل', 'error');
+                return;
+            }
 
-    // إضافة مستمعي الأحداث لتتبع التغييرات
-    document.getElementById('notes').addEventListener('input', trackChanges);
-    
-    // التهيئة الأولية
-    renderCurrentSlide();
-  </script>
+            try {
+                showToast('جاري إنشاء العرض التقديمي...', 'info');
+                showLoading('جاري إنشاء العرض التقديمي...');
+                
+                const pptx = new PptxGenJS();
+                pptx.layout = 'LAYOUT_WIDE';
+                
+                // إعدادات التصميم الأساسية
+                const slideWidth = 13.33;
+                const slideHeight = 7.5;
+                
+                slides.forEach((slide, index) => {
+                    const slideObj = pptx.addSlide();
+
+                    // إضافة الخلفية من الصورة المرفوعة على GitHub
+                    slideObj.background = {
+                        path: 'https://raw.githubusercontent.com/aicordinators-ux/presentation-app/main/Template.jpg'
+                    };
+                    
+                    const imgWidth = (slideWidth - (0.6 * 2) - 0.3 * 2) / 3;
+                    const imgHeight = 4.5;
+                    const borderWidth = 0.1; // إطار عريض
+                    
+                    // إضافة الصور مع إطار أسود عريض
+                    slide.images.forEach((data, j) => {
+                        const x = 0.6 + j * (imgWidth + 0.15);
+                        const y = 0.8;
+                        
+                        if (data) {
+                            // إضافة الإطار الأسود العريض
+                            slideObj.addShape(pptx.ShapeType.rect, {
+                                x: x - borderWidth/2,
+                                y: y - borderWidth/2,
+                                w: imgWidth + borderWidth,
+                                h: imgHeight + borderWidth,
+                                fill: { color: '000000' },
+                                line: { color: '000000', width: 2 }
+                            });
+                            
+                            // إضافة الصورة داخل الإطار
+                            slideObj.addImage({
+                                data: data,
+                                x: x,
+                                y: y,
+                                w: imgWidth,
+                                h: imgHeight
+                            });
+                        } else {
+                            // للمربعات الفارغة - إطار أسود مع خلفية رمادية
+                            slideObj.addShape(pptx.ShapeType.rect, {
+                                x: x - borderWidth/2,
+                                y: y - borderWidth/2,
+                                w: imgWidth + borderWidth,
+                                h: imgHeight + borderWidth,
+                                fill: { color: '000000' },
+                                line: { color: '000000', width: 2 }
+                            });
+                            
+                            slideObj.addShape(pptx.ShapeType.rect, {
+                                x: x,
+                                y: y,
+                                w: imgWidth,
+                                h: imgHeight,
+                                fill: { color: 'F7F7F7' },
+                                line: { color: 'CCCCCC', width: 1 }
+                            });
+                            
+                            slideObj.addText('لا توجد صورة', {
+                                x: x,
+                                y: y + imgHeight / 2 - 0.2,
+                                w: imgWidth,
+                                h: 0.4,
+                                align: 'center',
+                                fontSize: 12,
+                                color: '666666',
+                                bold: true
+                            });
+                        }
+                    });
+                    
+                    // استخدام بيانات العميل المخزنة في السلايد
+                    const customerData = slide.customerData;
+                    const merch = customerData.merchCode || 'غير محدد';
+                    const acc = customerData.accCode || 'غير محدد';
+                    const name = customerData.custName || 'غير محدد';
+                    const addr = customerData.custAddress || 'غير محدد';
+                    const type = customerData.custType || 'غير محدد';
+                    const gov = customerData.custGov || 'غير محدد';
+                    const notes = customerData.notes || '';
+                    
+                    // إضافة الجدول بتصميم محترف
+                    const rows = [
+                        [
+                            { 
+                                text: 'Merch Code', 
+                                options: { 
+                                    bold: true, 
+                                    fill: { color: '1F4E79' },
+                                    color: 'FFFFFF',
+                                    align: 'center',
+                                    fontSize: 11
+                                } 
+                            },
+                            { 
+                                text: 'Acc-Code', 
+                                options: { 
+                                    bold: true, 
+                                    fill: { color: '1F4E79' },
+                                    color: 'FFFFFF',
+                                    align: 'center',
+                                    fontSize: 11
+                                } 
+                            },
+                            { 
+                                text: 'Customer Name', 
+                                options: { 
+                                    bold: true, 
+                                    fill: { color: '1F4E79' },
+                                    color: 'FFFFFF',
+                                    align: 'center',
+                                    fontSize: 11
+                                } 
+                            },
+                            { 
+                                text: 'Customer Address', 
+                                options: { 
+                                    bold: true, 
+                                    fill: { color: '1F4E79' },
+                                    color: 'FFFFFF',
+                                    align: 'center',
+                                    fontSize: 11
+                                } 
+                            },
+                            { 
+                                text: 'Customer Type', 
+                                options: { 
+                                    bold: true, 
+                                    fill: { color: '1F4E79' },
+                                    color: 'FFFFFF',
+                                    align: 'center',
+                                    fontSize: 11
+                                } 
+                            },
+                            { 
+                                text: 'Gov.', 
+                                options: { 
+                                    bold: true, 
+                                    fill: { color: '1F4E79' },
+                                    color: 'FFFFFF',
+                                    align: 'center',
+                                    fontSize: 11
+                                } 
+                            },
+                            { 
+                                text: 'Notes', 
+                                options: { 
+                                    bold: true, 
+                                    fill: { color: '1F4E79' },
+                                    color: 'FFFFFF',
+                                    align: 'center',
+                                    fontSize: 11
+                                } 
+                            }
+                        ],
+                        [
+                            merch, 
+                            acc, 
+                            name, 
+                            addr, 
+                            type, 
+                            gov, 
+                            notes
+                        ]
+                    ];
+                    
+                    slideObj.addTable(rows, {
+                        x: 0.3,
+                        y: 5.8,
+                        w: 12.7,
+                        colW: [1.5, 1.5, 2.5, 2.5, 1.5, 1.5, 1.7],
+                        fontSize: 10,
+                        border: { pt: 1, color: '666666' },
+                        fill: { color: 'F9F9F9' },
+                        align: 'center',
+                        valign: 'middle'
+                    });
+                });
+
+                hideLoading();
+                
+                // نافذة الحفظ
+                const fileNameModal = document.createElement('div');
+                fileNameModal.className = 'modal';
+                fileNameModal.innerHTML = `
+                    <div class="modal-content">
+                        <h3 class="modal-title">حفظ العرض التقديمي</h3>
+                        <p>أدخل اسم الملف:</p>
+                        <input type="text" id="fileNameInput" value="عرض-العملاء" style="padding:10px;width:100%;border-radius:6px;border:1px solid #ccc;margin-bottom:15px;">
+                        <div class="modal-buttons">
+                            <button id="cancelSaveBtn" class="btn-outline">إلغاء</button>
+                            <button id="confirmSaveBtn" class="btn-primary">حفظ</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(fileNameModal);
+                
+                const fileNameInput = document.getElementById('fileNameInput');
+                fileNameInput.select();
+                
+                document.getElementById('cancelSaveBtn').addEventListener('click', () => {
+                    document.body.removeChild(fileNameModal);
+                    showToast('تم إلغاء الحفظ', 'info');
+                });
+                
+                document.getElementById('confirmSaveBtn').addEventListener('click', async () => {
+                    const fileName = fileNameInput.value.trim() || 'عرض-العملاء';
+                    document.body.removeChild(fileNameModal);
+                    
+                    try {
+                        showLoading('جاري حفظ الملف...');
+                        await pptx.writeFile({ fileName: `${fileName}.pptx` });
+                        hasUnsavedChanges = false;
+                        hideLoading();
+                        showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
+                    } catch (saveError) {
+                        console.error('خطأ في الحفظ:', saveError);
+                        hideLoading();
+                        showToast('فشل في حفظ الملف', 'error');
+                    }
+                });
+                
+                fileNameInput.addEventListener('keypress', async (e) => {
+                    if (e.key === 'Enter') {
+                        const fileName = fileNameInput.value.trim() || 'عرض-العملاء';
+                        document.body.removeChild(fileNameModal);
+                        
+                        try {
+                            showLoading('جاري حفظ الملف...');
+                            await pptx.writeFile({ fileName: `${fileName}.pptx` });
+                            hasUnsavedChanges = false;
+                            hideLoading();
+                            showToast('تم إنشاء العرض التقديمي بنجاح', 'success');
+                        } catch (saveError) {
+                            console.error('خطأ في الحفظ:', saveError);
+                            hideLoading();
+                            showToast('فشل في حفظ الملف', 'error');
+                        }
+                    }
+                });
+                
+                fileNameModal.addEventListener('click', (e) => {
+                    if (e.target === fileNameModal) {
+                        document.body.removeChild(fileNameModal);
+                        showToast('تم إلغاء الحفظ', 'info');
+                    }
+                });
+                
+            } catch (error) {
+                console.error('خطأ رئيسي في إنشاء العرض:', error);
+                hideLoading();
+                showToast('فشل في إنشاء العرض التقديمي', 'error');
+            }
+        });
+
+        // تحديث البيانات
+        document.getElementById('refreshDataBtn').addEventListener('click', () => {
+            loadSheetData();
+        });
+
+        // التحذير عند محاولة تحديث الصفحة أو إغلاقها
+        window.addEventListener('beforeunload', function (e) {
+            if (hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = 'سيتم مسح كل البيانات المدخلة';
+            }
+        });
+
+        // التهيئة الأولية
+        renderCurrentSlide();
+    </script>
 </body>
 </html>
