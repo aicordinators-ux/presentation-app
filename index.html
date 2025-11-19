@@ -601,16 +601,19 @@
         
         console.log('البيانات مع العناوين:', jsonData);
         
-        // معالجة البيانات
+        // معالجة البيانات - التأكد من تخزين الأكواد كنصوص مع الحفاظ على الأصفار البادئة
         excelData = jsonData.map(row => {
+          // الحفاظ على الأكواد كنصوص تمامًا كما هي في الملف
+          const merchCode = row[headers[0]] !== undefined ? String(row[headers[0]]) : '';
+          
           return {
-            "Merch Code": String(row[headers[0]] || '').trim(),
-            "Acc-Code": String(row[headers[1]] || '').trim(),
-            "Customer Name": String(row[headers[2]] || '').trim(),
-            "Customer Address": String(row[headers[3]] || '').trim(),
-            "Customer Type": String(row[headers[4]] || '').trim(),
-            "Gov.": String(row[headers[5]] || '').trim(),
-            "Notes": String(row[headers[6]] || '').trim()
+            "Merch Code": merchCode,
+            "Acc-Code": row[headers[1]] !== undefined ? String(row[headers[1]]) : '',
+            "Customer Name": row[headers[2]] !== undefined ? String(row[headers[2]]) : '',
+            "Customer Address": row[headers[3]] !== undefined ? String(row[headers[3]]) : '',
+            "Customer Type": row[headers[4]] !== undefined ? String(row[headers[4]]) : '',
+            "Gov.": row[headers[5]] !== undefined ? String(row[headers[5]]) : '',
+            "Notes": row[headers[6]] !== undefined ? String(row[headers[6]]) : ''
           };
         }).filter(item => item["Merch Code"] !== '' && item["Merch Code"] !== undefined);
 
@@ -666,7 +669,7 @@
         return;
       }
 
-      // البحث في البيانات
+      // البحث في البيانات - التعامل مع الأكواد كنصوص دائمًا
       const match = findCustomerByCode(code);
 
       if (match) {
@@ -684,18 +687,13 @@
       }
     });
 
-    // دالة للبحث عن العميل بالكود
+    // دالة للبحث عن العميل بالكود - معدلة للتعامل مع الأكواد كنصوص
     function findCustomerByCode(code) {
+      // البحث عن تطابق تام للنص - التعامل مع الأكواد كنصوص
       return excelData.find(item => {
-        const merchCode = String(item['Merch Code'] || '').trim();
-        
-        // محاولات مطابقة مختلفة
-        if (merchCode === code) return true;
-        if (merchCode.replace(/^0+/, '') === code.replace(/^0+/, '')) return true;
-        if (merchCode.padStart(Math.max(merchCode.length, code.length), '0') === 
-            code.padStart(Math.max(merchCode.length, code.length), '0')) return true;
-        
-        return false;
+        const merchCode = item['Merch Code'] || '';
+        // المقارنة كنصوص بالضبط كما تم إدخالها
+        return merchCode === code;
       });
     }
 
