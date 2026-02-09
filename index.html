@@ -800,36 +800,46 @@
 
         // تعبئة البيانات عند كتابة Merch Code
         document.getElementById('merchCode').addEventListener('input', () => {
-            if (!isDataLoaded) {
-                showToast('بيانات العملاء غير جاهزة بعد. يرجى الانتظار...', 'warning');
-                return;
-            }
-            
-            const code = document.getElementById('merchCode').value.trim();
-            
-            // إذا كان الحقل فارغ، امسح باقي الحقول
-            if (code === '') {
-                clearCustomerData();
-                return;
-            }
+    if (!isDataLoaded) {
+        showToast('بيانات العملاء غير جاهزة بعد. يرجى الانتظار...', 'warning');
+        return;
+    }
 
-            // البحث في البيانات - التعامل مع الأكواد كنصوص دائمًا
-            const match = findCustomerByCode(code);
+    const code = document.getElementById('merchCode').value.trim();
 
-            if (match) {
-                fillCustomerData(match);
-                currentCustomerCode = code;
-                updateCustomerInfo(match['Customer Name'], code);
-                showToast('تم تحميل بيانات العميل', 'success');
-            } else {
-                // مسح الحقول إذا لم يتم العثور على العميل
-                clearCustomerData();
-                
-                if (code.length > 0) {
-                    showToast('لم يتم العثور على بيانات لهذا الكود', 'error');
-                }
-            }
-        });
+    // لو الحقل فاضي
+    if (code === '') {
+        clearCustomerData();
+
+        // ✅ نحفظ الحالة فورًا في السلايد
+        saveCurrentCustomerDataToSlide();
+        renderSlides();
+
+        return;
+    }
+
+    const match = findCustomerByCode(code);
+
+    if (match) {
+        fillCustomerData(match);
+        currentCustomerCode = code;
+        updateCustomerInfo(match['Customer Name'], code);
+
+        // ✅ ده السطر اللي كان ناقصك
+        saveCurrentCustomerDataToSlide();
+        renderSlides();
+
+        showToast('تم تحميل بيانات العميل', 'success');
+    } else {
+        clearCustomerData();
+
+        saveCurrentCustomerDataToSlide();
+        renderSlides();
+
+        showToast('لم يتم العثور على بيانات لهذا الكود', 'error');
+    }
+});
+
 
         // دالة للبحث عن العميل بالكود - معدلة للتعامل مع الأكواد كنصوص
         function findCustomerByCode(code) {
