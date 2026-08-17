@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مصمم العروض التقديمية — بيانات العملاء</title>
-    <script src="https://unpkg.com/pptxgenjs@3.9.0/dist/pptxgen.bundle.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.9.0/dist/pptxgen.bundle.js"
+            onerror="this.onerror=null;var s=document.createElement('script');s.src='https://unpkg.com/pptxgenjs@3.9.0/dist/pptxgen.bundle.js';document.head.appendChild(s);"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
+            onerror="this.onerror=null;var s=document.createElement('script');s.src='https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js';document.head.appendChild(s);"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
@@ -773,11 +775,39 @@
             }
         }
 
-        // روابط البيانات من GitHub
+        // روابط البيانات — الأولوية لنفس دومين الموقع (GitHub Pages) لأنه لا يحتاج CORS ولا يتأثر بحجب raw.githubusercontent في مصر
         const GITHUB_EXCEL_URLS = [
+            "./Customers%202025.xlsx",                 // نفس الدومين (الأفضل والأسرع)
+            "Customers%202025.xlsx",                   // مسار نسبي بديل
+            "https://cdn.jsdelivr.net/gh/aicordinators-ux/presentation-app@main/Customers%202025.xlsx",
+            "https://cdn.statically.io/gh/aicordinators-ux/presentation-app/main/Customers%202025.xlsx",
             "https://raw.githubusercontent.com/aicordinators-ux/presentation-app/main/Customers%202025.xlsx",
             "https://github.com/aicordinators-ux/presentation-app/raw/main/Customers%202025.xlsx"
         ];
+
+        // تحميل مكتبة قراءة الإكسل من مصدر بديل لو المصدر الأساسي محجوب
+        function loadScriptOnce(src) {
+            return new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = src;
+                s.onload = resolve;
+                s.onerror = () => reject(new Error('script failed: ' + src));
+                document.head.appendChild(s);
+            });
+        }
+        async function ensureXLSX() {
+            if (typeof XLSX !== 'undefined') return;
+            const cdns = [
+                "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js",
+                "https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js",
+                "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"
+            ];
+            for (const url of cdns) {
+                try { await loadScriptOnce(url); } catch (e) { console.warn(e.message); }
+                if (typeof XLSX !== 'undefined') return;
+            }
+            throw new Error('LIB_XLSX_FAILED');
+        }
 
         // دالة لمعالجة بيانات Excel
         function processExcelData(workbook) {
@@ -869,8 +899,9 @@
             showLoading('جاري تحميل الملف المحلي...');
             
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
+                    await ensureXLSX();
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     processExcelData(workbook);
@@ -896,7 +927,10 @@
                 updateDataStatus('loading', 'جاري تحميل بيانات العملاء...');
                 toggleUIElements(false);
                 showLoading('جاري تحميل بيانات العملاء...');
-                
+
+                // التأكد من تحميل مكتبة قراءة الإكسل أولاً
+                await ensureXLSX();
+
                 let success = false;
                 
                 // تجربة جميع الروابط البديلة
@@ -931,9 +965,14 @@
                 
             } catch (err) {
                 console.error('خطأ في تحميل بيانات الورقة:', err);
-                
-                updateDataStatus('error', 'فشل تحميل بيانات العملاء');
-                showToast('فشل تحميل بيانات العملاء. يرجى تحميل ملف Excel محلي.', 'error');
+
+                if (err && err.message === 'LIB_XLSX_FAILED') {
+                    updateDataStatus('error', 'تعذّر تحميل مكتبة قراءة الإكسل (قد تكون محجوبة على شبكتك)');
+                    showToast('تعذّر تحميل مكتبة قراءة الإكسل. جرّب شبكة/إنترنت آخر أو VPN.', 'error');
+                } else {
+                    updateDataStatus('error', 'فشل تحميل بيانات العملاء');
+                    showToast('فشل تحميل بيانات العملاء. يرجى تحميل ملف Excel محلي.', 'error');
+                }
                 isDataLoaded = false;
                 toggleUIElements(false);
                 hideLoading();
